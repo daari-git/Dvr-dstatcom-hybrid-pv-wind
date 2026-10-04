@@ -186,8 +186,6 @@ addpath('scripts'); build_basecase; build_dvr; run_dvr;
 | `scripts/run_dvr.m` | Runs the DVR scenarios and writes the summary and figures |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
-| `LICENSE` | MIT licence for this project |
-| `LICENSE-IEEE13-model.txt` | MIT licence of the IEEE 13 model (Arun Suresh, UNC Charlotte) |
 
 ## Requirements
 
@@ -195,14 +193,11 @@ addpath('scripts'); build_basecase; build_dvr; run_dvr;
 - Simulink and Simscape Electrical (Specialized Power Systems)
 - Later steps: Global Optimization Toolbox, Deep Learning Toolbox
 
-## License
+## Acknowledgement
 
-This project is released under the MIT License, Copyright (c) 2026 Subash
-Khanal. See `LICENSE`.
-
-The IEEE 13-bus Simulink model is third-party work by Arun Suresh (University
-of North Carolina at Charlotte), also under the MIT License. Its original
-notice is kept in `LICENSE-IEEE13-model.txt`.
+The IEEE 13-bus Simulink model (`IEEE13bus_v2019b_Discrete.slx`) is the work of
+Arun Suresh and Dr. Sukumar Kamalasadan, University of North Carolina at
+Charlotte, released under the MIT License (Copyright (c) 2023 Arun Suresh).
 
 ## References
 
