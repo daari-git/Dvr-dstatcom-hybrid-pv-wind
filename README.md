@@ -38,7 +38,7 @@ flowchart TD
 |---|---|---|---|
 | 1 | Literature review and research gap | Gap statement, reference list | In progress (8 papers, more to come) |
 | 2 | Validate IEEE 13-bus benchmark model | Node voltages within 0.01 pu of benchmark | Done |
-| 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | To do |
+| 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | Done |
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | To do |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | To do |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | To do |
@@ -64,11 +64,42 @@ flowchart TD
 - Low-voltage ride-through compliance (IEEE 1547-2018)
 - ML accuracy and inference time (target: within a quarter to half cycle)
 
+## Base-case results (no compensation)
+
+Fault at node 680 from 0.8 s to 1.0 s (fault resistance 0.01 ohm). Voltages are
+fundamental RMS at node 634, the 480 V load behind the transformer, measured
+during the disturbance.
+
+| Scenario | Va (pu) | Vb (pu) | Vc (pu) | Unbalance (%) | Voltage THD (%) |
+|---|---|---|---|---|---|
+| Normal operation | 0.995 | 1.020 | 0.996 | 0.6 | 0.0 |
+| Three-phase-to-ground fault | 0.607 | 0.634 | 0.620 | 2.9 | 0.0 |
+| Single line-to-ground fault (A) | 0.613 | 1.104 | 1.097 | 8.9 | 0.0 |
+| Line-to-line fault (B-C) | 0.983 | 0.730 | 0.740 | 24.1 | 0.0 |
+| Double line-to-ground fault (B-C) | 1.102 | 0.619 | 0.617 | 21.8 | 0.0 |
+| Non-linear load (100 kW rectifier at 634) | 0.991 | 1.017 | 0.993 | 0.6 | 2.0 |
+
+Faults give sags down to about 0.61 pu, and ground faults also give swells of
+about 1.10 pu on the healthy phases. Full results for nodes 632, 634 and 671
+are in `results/basecase_summary.csv`.
+
+![Three-phase fault, node 634 voltage](results/basecase_fault_LLLG.png)
+
+To reproduce, in MATLAB from the repository root:
+
+```matlab
+addpath('scripts'); build_basecase; run_basecase;
+```
+
 ## Contents
 
 | File | Description |
 |---|---|
 | `IEEE13bus_v2019b_Discrete.slx` | IEEE 13-node test feeder, discrete, 60 Hz, 4.16 kV, Ts = 50 µs |
+| `IEEE13_basecase.slx` | IEEE 13 feeder with a fault at node 680, a switchable rectifier load at node 634, and waveform logging |
+| `scripts/build_basecase.m` | Builds `IEEE13_basecase.slx` from the IEEE 13 model |
+| `scripts/run_basecase.m` | Runs the base-case scenarios and writes the summary and figures |
+| `results/` | Base-case summary table and one figure per scenario |
 | `LICENSE` | MIT licence for this project |
 | `LICENSE-IEEE13-model.txt` | MIT licence of the IEEE 13 model (Arun Suresh, UNC Charlotte) |
 
