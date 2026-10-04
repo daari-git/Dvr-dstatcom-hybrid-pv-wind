@@ -1,0 +1,16 @@
+# Copyrighted papers: keep local, cite in README instead
+Papers/
+
+# Old model versions and downloaded packages
+Archive/
+
+# Real utility feeder data: not for sharing without permission
+Sanepa_overall_model*.slx
+
+# MATLAB / Simulink generated files
+slprj/
+*.slxc
+*.asv
+*.autosave
+*.mex*
+*.log
