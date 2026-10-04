@@ -2,7 +2,8 @@ function add_dg(mdl)
 % Adds the PV plant (400 kW, node 634) and the wind plant (500 kW, node 675)
 % to a loaded model built from the IEEE 13-bus base case.
 % Each plant is an averaged inverter behind a coupling filter, connected
-% through a breaker that closes at 0.2 s.
+% through a breaker that closes at 0.2 s, and is grouped into its own
+% subsystem ('PV Plant', 'Wind Plant').
 
 here = fileparts(mfilename('fullpath'));
 libs = {'spsControlledVoltageSourceLib', 'spsThreePhaseSeriesRLCBranchLib', ...
@@ -123,4 +124,6 @@ add_block('simulink/Sinks/To Workspace', blk('Log'), ...
     'Position', [x0+50 y0+85 x0+130 y0+109], 'VariableName', ['log_' lower(name)], ...
     'SaveFormat', 'Timeseries', 'MaxDataPoints', 'inf', 'SampleTime', '-1');
 add_line(mdl, [cn '/2'], [name ' Log/1'], 'autorouting', 'on');
+
+group_plant(mdl, name);
 end

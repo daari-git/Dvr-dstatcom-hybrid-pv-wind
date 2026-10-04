@@ -24,8 +24,8 @@ set_param([mdl '/NL Breaker'], 'SwitchTimes', '[100]');
 rows = {};
 for s = 1:size(scen, 1)
     [name, fph, bp, g, v, tStop, wins] = scen{s, :};
-    set_param([mdl '/PV Resource'], 'BreakpointsForDimension1', bp, 'Table', g);
-    set_param([mdl '/Wind Resource'], 'BreakpointsForDimension1', bp, 'Table', v);
+    set_param([mdl '/PV Plant/PV Resource'], 'BreakpointsForDimension1', bp, 'Table', g);
+    set_param([mdl '/Wind Plant/Wind Resource'], 'BreakpointsForDimension1', bp, 'Table', v);
     flt = [mdl '/Fault 680'];
     if isempty(fph)
         set_param(flt, 'SwitchTimes', '[100 100.1]');
