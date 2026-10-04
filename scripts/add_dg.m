@@ -125,5 +125,5 @@ add_block('simulink/Sinks/To Workspace', blk('Log'), ...
     'SaveFormat', 'Timeseries', 'MaxDataPoints', 'inf', 'SampleTime', '-1');
 add_line(mdl, [cn '/2'], [name ' Log/1'], 'autorouting', 'on');
 
-group_plant(mdl, name);
+group_blocks(mdl, name, [name ' Plant']);
 end

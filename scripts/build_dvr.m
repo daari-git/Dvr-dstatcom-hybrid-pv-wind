@@ -94,6 +94,8 @@ add_block('simulink/Sinks/To Workspace', [dst '/Log Vs634'], ...
     'SaveFormat', 'Timeseries', 'MaxDataPoints', 'inf', 'SampleTime', '-1');
 add_line(dst, 'Log From XFXFM1/1', 'Log Vs634/1');
 
+group_blocks(dst, 'DVR', 'DVR');
+
 save_system(dst);
 close_system(dst, 0);
 fprintf('Built %s\n', fullfile(root, [dst '.slx']));

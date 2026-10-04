@@ -22,9 +22,9 @@ scen = {
 rows = {};
 for s = 1:size(scen, 1)
     [name, mode, nl, fph, tStop, wins] = scen{s, :};
-    set_param([mdl '/DST Mode'], 'Value', num2str(mode));
-    set_param([mdl '/DST Enable'], 'Time', num2str(tDst));
-    set_param([mdl '/DST Breaker'], 'SwitchTimes', sprintf('[%g]', tDst));
+    set_param([mdl '/D-STATCOM/DST Mode'], 'Value', num2str(mode));
+    set_param([mdl '/D-STATCOM/DST Enable'], 'Time', num2str(tDst));
+    set_param([mdl '/D-STATCOM/DST Breaker'], 'SwitchTimes', sprintf('[%g]', tDst));
     set_param([mdl '/NL Breaker'], 'SwitchTimes', sprintf('[%g]', tern(nl, tNL, 100)));
     flt = [mdl '/Fault 680'];
     if isempty(fph)

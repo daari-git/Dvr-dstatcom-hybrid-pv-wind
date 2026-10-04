@@ -123,6 +123,8 @@ for k = 1:numel(tags)
     add_line(dst, sprintf('Log From %s/1', tags{k}), sprintf('Log %s/1', tags{k}));
 end
 
+group_blocks(dst, 'DST', 'D-STATCOM');
+
 save_system(dst);
 close_system(dst, 0);
 fprintf('Built %s\n', fullfile(root, [dst '.slx']));

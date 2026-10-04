@@ -242,6 +242,7 @@ addpath('scripts'); build_basecase; build_dg; run_dg;
 | `scripts/build_dg.m` | Builds `IEEE13_dg.slx` |
 | `scripts/dg_controller.m` | PV and wind plant models and inverter control (copied into the MATLAB Function blocks) |
 | `scripts/run_dg.m` | Runs the DG scenarios and writes the summary and figures |
+| `scripts/group_blocks.m` | Groups a device's blocks into one subsystem (`D-STATCOM`, `DVR`, `PV Plant`, `Wind Plant`) |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 

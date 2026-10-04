@@ -20,7 +20,7 @@ scen = {
     };
 wins = {'before', 0.5; 'dvr_on', 0.7; 'during_fault', 0.9};
 
-set_param([mdl '/DVR Enable'], 'Time', num2str(tDvr));
+set_param([mdl '/DVR/DVR Enable'], 'Time', num2str(tDvr));
 set_param([mdl '/NL Breaker'], 'SwitchTimes', '[100]');
 rows = {};
 for s = 1:size(scen, 1)
