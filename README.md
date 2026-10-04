@@ -40,7 +40,7 @@ flowchart TD
 | 2 | Validate IEEE 13-bus benchmark model | Node voltages within 0.01 pu of benchmark | Done |
 | 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | Done |
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
-| 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | To do |
+| 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | To do |
 | 7 | Offline optimisation (PSO or grey wolf) | Device location, rating and PI gains | To do |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
@@ -134,6 +134,40 @@ Full results are in `results/dstatcom_summary.csv`. To reproduce:
 addpath('scripts'); build_basecase; build_dstatcom; run_dstatcom;
 ```
 
+## DVR results (PI control, no D-STATCOM)
+
+A DVR is connected in series between the transformer and node 634 and
+enabled at 0.6 s. It injects the difference between a 1.0 pu reference and the
+measured supply voltage (feed-forward), with PI regulators in the synchronous
+reference frame trimming the load voltage. The injection limit is 0.5 pu per
+phase. The converter is an averaged model (no switching) with ideal energy
+storage; the series impedance stands for a 5 % injection transformer.
+
+Load voltage at node 634 during the fault, phases A / B / C:
+
+| Fault at node 680 | Supply side (pu) | Load side with DVR (pu) | Injected (pu) | Mean power (kW) | Energy in 0.2 s (kJ) |
+|---|---|---|---|---|---|
+| Three-phase-to-ground | 0.594 / 0.627 / 0.610 | 0.996 / 1.003 / 1.001 | 0.439 / 0.414 / 0.421 | 156.0 | 31.3 |
+| Single line-to-ground (A) | 0.598 / 1.112 / 1.099 | 0.996 / 1.003 / 1.001 | 0.436 / 0.199 / 0.110 | 41.8 | 8.4 |
+| Line-to-line (B-C) | 0.982 / 0.727 / 0.732 | 0.995 / 1.009 / 0.996 | 0.058 / 0.405 / 0.347 | 74.1 | 14.7 |
+| Double line-to-ground (B-C) | 1.107 / 0.608 / 0.607 | 0.995 / 1.006 / 0.999 | 0.086 / 0.431 / 0.422 | 77.6 | 15.4 |
+
+The DVR holds the load within 1 % of nominal in all four faults, including the
+swells on the healthy phases, and keeps the load-voltage unbalance below 0.7 %.
+The D-STATCOM alone reached only 0.63 pu in the same three-phase fault.
+
+When the DVR is idle its series impedance lowers the load voltage by about
+0.03 pu (0.959 / 0.991 / 0.968 pu); once enabled it restores 0.997 / 1.002 /
+1.002 pu in normal operation.
+
+![DVR, single line-to-ground fault](results/dvr_fault_LG_A.png)
+
+Full results are in `results/dvr_summary.csv`. To reproduce:
+
+```matlab
+addpath('scripts'); build_basecase; build_dvr; run_dvr;
+```
+
 ## Contents
 
 | File | Description |
@@ -146,6 +180,10 @@ addpath('scripts'); build_basecase; build_dstatcom; run_dstatcom;
 | `scripts/build_dstatcom.m` | Builds `IEEE13_dstatcom.slx` from the base-case model |
 | `scripts/dstatcom_controller.m` | D-STATCOM control code (copied into the model's MATLAB Function block) |
 | `scripts/run_dstatcom.m` | Runs the D-STATCOM scenarios and writes the summary and figures |
+| `IEEE13_dvr.slx` | Base-case model plus the series DVR at node 634 and its controller |
+| `scripts/build_dvr.m` | Builds `IEEE13_dvr.slx` from the base-case model |
+| `scripts/dvr_controller.m` | DVR control code (copied into the model's MATLAB Function block) |
+| `scripts/run_dvr.m` | Runs the DVR scenarios and writes the summary and figures |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 | `LICENSE` | MIT licence for this project |

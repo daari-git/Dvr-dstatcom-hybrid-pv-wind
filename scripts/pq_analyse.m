@@ -6,6 +6,7 @@ function r = pq_analyse(ts, t0, f0, base)
 %   r.thd  THD per phase, percent (harmonics 2 to 50)
 %   r.unb  negative- to positive-sequence ratio, percent
 t = ts.Time; x = squeeze(ts.Data);
+if size(x, 1) ~= numel(t), x = x.'; end       % vector signals log as 3-by-N
 Ts = t(2) - t(1);
 n  = round(3/f0/Ts);                       % three cycles: integer sample count
 i0 = find(t >= t0, 1);
