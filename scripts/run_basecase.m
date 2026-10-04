@@ -45,14 +45,14 @@ for s = 1:size(scen, 1)
 
     for b = 1:numel(bus)
         ts  = out.get(['log_' bus{b}]);
-        pre = analyse(ts, tOn - 0.10, f0, vbase(b));
-        dur = analyse(ts, tOn + 0.10, f0, vbase(b));
+        pre = pq_analyse(ts, tOn - 0.10, f0, vbase(b));
+        dur = pq_analyse(ts, tOn + 0.10, f0, vbase(b));
         rows(end+1, :) = {name, bus{b}(2:end), ...
-            pre.vpu(1), pre.vpu(2), pre.vpu(3), ...
-            dur.vpu(1), dur.vpu(2), dur.vpu(3), ...
-            min(dur.vpu), max(dur.vpu), dur.vuf, max(dur.thd), NaN}; %#ok<AGROW>
+            pre.pu(1), pre.pu(2), pre.pu(3), ...
+            dur.pu(1), dur.pu(2), dur.pu(3), ...
+            min(dur.pu), max(dur.pu), dur.unb, max(dur.thd), NaN}; %#ok<AGROW>
     end
-    i634 = analyse(out.get('log_I634'), tOn + 0.10, f0, 1);
+    i634 = pq_analyse(out.get('log_I634'), tOn + 0.10, f0, 1);
     rows{end-2, 13} = max(i634.thd);          % current THD belongs to bus 634
 
     plot_scenario(out.get('log_V634'), vbase(1), f0, tOn, tOff, name, outd);
@@ -64,24 +64,6 @@ T = cell2table(rows, 'VariableNames', {'scenario', 'bus', ...
 writetable(T, fullfile(outd, 'basecase_summary.csv'));
 disp(T);
 close_system(mdl, 0);
-end
-
-function r = analyse(ts, t0, f0, vbase)
-% Fundamental phasors, unbalance and THD over three cycles starting at t0.
-t = ts.Time; x = squeeze(ts.Data);
-Ts = t(2) - t(1);
-n  = round(3/f0/Ts);                       % three cycles: integer sample count
-i0 = find(t >= t0, 1);
-X  = fft(x(i0:i0+n-1, :)) / n * 2;         % peak amplitude per bin
-k1 = 3 + 1;                                % fundamental bin (three cycles)
-ph = X(k1, :) / sqrt(2);                   % rms phasors
-h  = 2:50;
-r.vpu = abs(ph) / vbase;
-r.thd = 100 * sqrt(sum(abs(X(3*h + 1, :)).^2, 1)) ./ abs(X(k1, :));
-a  = exp(1j*2*pi/3);
-v1 = (ph(1) + a*ph(2) + a^2*ph(3)) / 3;
-v2 = (ph(1) + a^2*ph(2) + a*ph(3)) / 3;
-r.vuf = 100 * abs(v2) / abs(v1);
 end
 
 function plot_scenario(ts, vbase, f0, tOn, tOff, name, outd)

@@ -39,7 +39,7 @@ flowchart TD
 | 1 | Literature review and research gap | Gap statement, reference list | In progress (8 papers, more to come) |
 | 2 | Validate IEEE 13-bus benchmark model | Node voltages within 0.01 pu of benchmark | Done |
 | 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | Done |
-| 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | To do |
+| 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | To do |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | To do |
 | 7 | Offline optimisation (PSO or grey wolf) | Device location, rating and PI gains | To do |
@@ -91,6 +91,49 @@ To reproduce, in MATLAB from the repository root:
 addpath('scripts'); build_basecase; run_basecase;
 ```
 
+## D-STATCOM results (PI control, no DVR)
+
+A 500 kVA D-STATCOM is connected at node 634 (480 V) and switched on at 0.6 s.
+Control is in the synchronous reference frame: a PLL, PI regulators for the
+DC-link voltage, the AC voltage and the two current components. The converter
+is an averaged model (no switching), with the DC link represented by its power
+balance.
+
+**Load compensation** (unbalanced load plus 100 kW rectifier), measured on the
+source side of node 634:
+
+| Quantity | Without D-STATCOM | With D-STATCOM |
+|---|---|---|
+| Power factor | 0.860 | 1.000 |
+| Reactive power from source (kvar) | 295.8 | -0.5 |
+| Source current THD, worst phase (%) | 5.1 | 2.7 |
+| Source current unbalance (%) | 7.1 | 0.7 |
+| Mean source current (A rms) | 698 | 621 |
+| Voltage THD at 634, worst phase (%) | 2.0 | 1.6 |
+
+The DC-link voltage stays between 975 V and 1008 V around its 1000 V reference.
+
+![D-STATCOM load compensation](results/dstatcom_compensation.png)
+
+**Voltage support during faults** (voltage regulation mode, fault at node 680):
+
+| Fault | Phase | Without D-STATCOM (pu) | With D-STATCOM (pu) |
+|---|---|---|---|
+| Three-phase-to-ground | A / B / C | 0.607 / 0.634 / 0.620 | 0.631 / 0.659 / 0.642 |
+| Single line-to-ground (A) | A / B / C | 0.613 / 1.104 / 1.097 | 0.636 / 1.133 / 1.123 |
+
+At its current limit (about 600 A rms) the D-STATCOM raises the sagged voltage
+by only about 0.02 pu, and in the single-phase fault it also raises the swell
+on the healthy phases. A shunt device of this rating cannot restore a deep sag
+caused by an upstream fault, which is the case for adding the series DVR in
+step 5.
+
+Full results are in `results/dstatcom_summary.csv`. To reproduce:
+
+```matlab
+addpath('scripts'); build_basecase; build_dstatcom; run_dstatcom;
+```
+
 ## Contents
 
 | File | Description |
@@ -99,7 +142,12 @@ addpath('scripts'); build_basecase; run_basecase;
 | `IEEE13_basecase.slx` | IEEE 13 feeder with a fault at node 680, a switchable rectifier load at node 634, and waveform logging |
 | `scripts/build_basecase.m` | Builds `IEEE13_basecase.slx` from the IEEE 13 model |
 | `scripts/run_basecase.m` | Runs the base-case scenarios and writes the summary and figures |
-| `results/` | Base-case summary table and one figure per scenario |
+| `IEEE13_dstatcom.slx` | Base-case model plus the D-STATCOM at node 634 and its controller |
+| `scripts/build_dstatcom.m` | Builds `IEEE13_dstatcom.slx` from the base-case model |
+| `scripts/dstatcom_controller.m` | D-STATCOM control code (copied into the model's MATLAB Function block) |
+| `scripts/run_dstatcom.m` | Runs the D-STATCOM scenarios and writes the summary and figures |
+| `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
+| `results/` | Summary tables and one figure per scenario |
 | `LICENSE` | MIT licence for this project |
 | `LICENSE-IEEE13-model.txt` | MIT licence of the IEEE 13 model (Arun Suresh, UNC Charlotte) |
 
