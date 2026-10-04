@@ -69,6 +69,7 @@ flowchart TD
 | File | Description |
 |---|---|
 | `IEEE13bus_v2019b_Discrete.slx` | IEEE 13-node test feeder, discrete, 60 Hz, 4.16 kV, Ts = 50 µs |
+| `LICENSE` | MIT licence for this project |
 | `LICENSE-IEEE13-model.txt` | MIT licence of the IEEE 13 model (Arun Suresh, UNC Charlotte) |
 
 ## Requirements
@@ -76,6 +77,15 @@ flowchart TD
 - MATLAB R2024b (the model was saved in R2019b and opens in later releases)
 - Simulink and Simscape Electrical (Specialized Power Systems)
 - Later steps: Global Optimization Toolbox, Deep Learning Toolbox
+
+## License
+
+This project is released under the MIT License, Copyright (c) 2026 Subash
+Khanal. See `LICENSE`.
+
+The IEEE 13-bus Simulink model is third-party work by Arun Suresh (University
+of North Carolina at Charlotte), also under the MIT License. Its original
+notice is kept in `LICENSE-IEEE13-model.txt`.
 
 ## References
 
