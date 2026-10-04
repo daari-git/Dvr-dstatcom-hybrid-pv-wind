@@ -41,7 +41,7 @@ flowchart TD
 | 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | Done |
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
-| 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | To do |
+| 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
 | 7 | Offline optimisation (PSO or grey wolf) | Device location, rating and PI gains | To do |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
@@ -168,6 +168,59 @@ Full results are in `results/dvr_summary.csv`. To reproduce:
 addpath('scripts'); build_basecase; build_dvr; run_dvr;
 ```
 
+## PV and wind plants (no compensation)
+
+Two inverter-interfaced plants are added to the base-case feeder and connect
+at 0.2 s:
+
+| Plant | Rating | Node | Source model |
+|---|---|---|---|
+| PV | 400 kW, 450 kVA | 634 (480 V) | Array I-V curve, perturb-and-observe MPPT |
+| Wind | 500 kW, 550 kVA | 675 (4.16 kV) | Full-converter turbine: Cp(lambda) aerodynamics, one-mass rotor, optimal-torque MPPT, DC chopper |
+
+Both use the same grid-side control: PLL, DC-link voltage PI, current PI loops,
+unity power factor, a 1.1 pu current limit, and momentary cessation when the
+voltage falls below 0.5 pu (resuming above 0.6 pu). The converters are averaged
+models. Together the plants supply about a quarter of the feeder load.
+
+**Resource variation** (irradiance 1000 to 300 W/m2 and wind 12 to 9 m/s, both
+ramped between 1.0 s and 1.1 s):
+
+| Quantity | Full output | Reduced output |
+|---|---|---|
+| PV power (kW) | 393 | 122 |
+| Wind power (kW) | 495 | 249 (still falling at 1.8 s) |
+| Node 634 voltage, A / B / C (pu) | 1.003 / 1.026 / 1.004 | 0.993 / 1.018 / 0.995 |
+| Node 675 voltage, A / B / C (pu) | 0.989 / 1.045 / 0.979 | 0.984 / 1.042 / 0.975 |
+
+Losing about 520 kW of generation moves the voltages by about 0.01 pu, so on
+this feeder the DG variation alone is a mild disturbance.
+
+![PV and wind output variation](results/dg_variation.png)
+
+**Faults at node 680** (1.0 s to 1.2 s), voltages are phases A / B / C:
+
+| Fault | Node 634 (pu) | Node 675 (pu) | PV during fault | Wind during fault |
+|---|---|---|---|---|
+| Three-phase-to-ground | 0.618 / 0.641 / 0.629 | 0.207 / 0.219 / 0.211 | 311 kW, current-limited | 0 kW, ceased |
+| Single line-to-ground (A) | 0.622 / 1.109 / 1.107 | 0.213 / 1.229 / 1.194 | 386 kW | 494 kW |
+
+In the three-phase fault the wind plant stops injecting because its node falls
+to 0.21 pu, and the PV plant stays connected at its current limit. Both return
+to full output after the fault. The DG raises the sag at node 634 only from
+0.607 pu to 0.618 pu, so the load still needs the DVR.
+
+The irradiance and wind changes are compressed into a fraction of a second,
+and the turbine inertia constant is shortened to 0.5 s, so that they fit a
+simulation of one to two seconds. Measured profiles lasting minutes are not
+practical at a 50 microsecond step.
+
+Full results are in `results/dg_summary.csv`. To reproduce:
+
+```matlab
+addpath('scripts'); build_basecase; build_dg; run_dg;
+```
+
 ## Contents
 
 | File | Description |
@@ -184,6 +237,11 @@ addpath('scripts'); build_basecase; build_dvr; run_dvr;
 | `scripts/build_dvr.m` | Builds `IEEE13_dvr.slx` from the base-case model |
 | `scripts/dvr_controller.m` | DVR control code (copied into the model's MATLAB Function block) |
 | `scripts/run_dvr.m` | Runs the DVR scenarios and writes the summary and figures |
+| `IEEE13_dg.slx` | Base-case model plus the PV plant at node 634 and the wind plant at node 675 |
+| `scripts/add_dg.m` | Adds the two plants to a model built from the base case |
+| `scripts/build_dg.m` | Builds `IEEE13_dg.slx` |
+| `scripts/dg_controller.m` | PV and wind plant models and inverter control (copied into the MATLAB Function blocks) |
+| `scripts/run_dg.m` | Runs the DG scenarios and writes the summary and figures |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 
