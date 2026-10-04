@@ -1,17 +1,68 @@
 # DVR and D-STATCOM with Hybrid PV-Wind Distributed Generation
 
-Research on coordinated control of a Dynamic Voltage Restorer (DVR) and a
-Distribution Static Compensator (D-STATCOM) in a distribution feeder with both
-solar PV and wind generation.
+Coordinated control of a Dynamic Voltage Restorer (DVR) and a Distribution
+Static Compensator (D-STATCOM) for power quality improvement in a distribution
+feeder with both solar PV and wind generation, using optimisation and machine
+learning. Modelled in MATLAB/Simulink on the IEEE 13-bus test feeder.
 
-## Status
+## Research gap
 
-- [x] Literature collected (first eight papers)
-- [x] IEEE 13-bus benchmark model checked against published node voltages (within 0.01 pu)
-- [ ] Base case: fault and uncompensated sag at the sensitive load bus
-- [ ] D-STATCOM alone, DVR alone (PI control)
-- [ ] PV and wind plants added
-- [ ] Coordinated operation, optimisation and ML layer
+Existing studies cover only part of the problem:
+
+- DVR and D-STATCOM are compared with a single source (wind only or solar only), not with PV and wind together.
+- Where PV and wind are combined, only a DVR is used, with conventional PQ-theory and hysteresis control.
+- Intelligent control (fuzzy, deep learning) is applied to one device with one source, not to the coordination of both devices.
+
+This work addresses the coordinated operation of both devices with both
+sources, with an optimisation and ML layer deciding how they share the
+compensation.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[1. Literature review and research gap] --> B[2. Benchmark feeder<br/>IEEE 13-bus validated against published voltages]
+    B --> C[3. Base case<br/>faults, sags, swells, non-linear load, no compensation]
+    C --> D[4. D-STATCOM alone<br/>PI control]
+    C --> E[5. DVR alone<br/>PI control]
+    D --> F[6. Add PV and wind plants<br/>real irradiance and wind profiles]
+    E --> F
+    F --> G[7. Offline optimisation<br/>placement, sizing, PI gains]
+    G --> H[8. Dataset generation<br/>scripted simulation runs]
+    H --> I[9. ML coordinator<br/>classify disturbance, predict duration, share compensation]
+    I --> J[10. Comparison<br/>fixed PI vs optimised PI vs optimised PI + ML]
+    J --> K[11. Results and thesis writing]
+```
+
+| Step | Task | Output | Status |
+|---|---|---|---|
+| 1 | Literature review and research gap | Gap statement, reference list | In progress (8 papers, more to come) |
+| 2 | Validate IEEE 13-bus benchmark model | Node voltages within 0.01 pu of benchmark | Done |
+| 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | To do |
+| 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | To do |
+| 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | To do |
+| 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | To do |
+| 7 | Offline optimisation (PSO or grey wolf) | Device location, rating and PI gains | To do |
+| 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
+| 9 | ML coordinator | Trained model, accuracy and inference time | To do |
+| 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
+| 11 | Writing | Thesis and paper | To do |
+
+### Test scenarios
+
+- Balanced and unbalanced voltage sags and swells
+- Single-phase and three-phase faults
+- Non-linear load (harmonics)
+- Step and real-profile changes in irradiance and wind speed
+
+### Performance metrics
+
+- Load voltage restoration and response time
+- Total harmonic distortion (IEEE 519)
+- Voltage unbalance
+- Injected kVA and storage energy
+- Low-voltage ride-through compliance (IEEE 1547-2018)
+- ML accuracy and inference time (target: within a quarter to half cycle)
 
 ## Contents
 
@@ -20,7 +71,11 @@ solar PV and wind generation.
 | `IEEE13bus_v2019b_Discrete.slx` | IEEE 13-node test feeder, discrete, 60 Hz, 4.16 kV, Ts = 50 µs |
 | `LICENSE-IEEE13-model.txt` | MIT licence of the IEEE 13 model (Arun Suresh, UNC Charlotte) |
 
-Tested with MATLAB R2024b and Simscape Electrical (Specialized Power Systems).
+## Requirements
+
+- MATLAB R2024b (the model was saved in R2019b and opens in later releases)
+- Simulink and Simscape Electrical (Specialized Power Systems)
+- Later steps: Global Optimization Toolbox, Deep Learning Toolbox
 
 ## References
 
