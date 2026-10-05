@@ -7,14 +7,32 @@ learning. Modelled in MATLAB/Simulink on the IEEE 13-bus test feeder.
 
 ## Research gap
 
-Existing studies cover only part of the problem:
+Ten papers have been reviewed. Two of them (Goud and Rao, 2021; Yadav et al.,
+2024) already combine a series and a shunt compensator with PV, wind and a
+battery, as a unified power quality conditioner (UPQC) whose controller gains
+are tuned by a metaheuristic. Combining both compensator types with both
+sources is therefore not new in itself. What those and the other papers leave
+open:
 
-- DVR and D-STATCOM are compared with a single source (wind only or solar only), not with PV and wind together.
-- Where PV and wind are combined, only a DVR is used, with conventional PQ-theory and hysteresis control.
-- Intelligent control (fuzzy, deep learning) is applied to one device with one source, not to the coordination of both devices.
+- **Test system.** The UPQC studies use a single source feeding one load. None
+  uses a standard unbalanced feeder with the devices and the plants at
+  different nodes.
+- **Disturbances.** They test balanced sags, swells and harmonics. None tests
+  unsymmetrical faults, which give a sag and a swell at once.
+- **Generation during the fault.** None reports whether the PV and wind plants
+  ride through the fault or how they change what the series device must
+  supply.
+- **Separate devices.** A UPQC shares one DC link. A DVR and a D-STATCOM as
+  separate devices, as compared by Kamarposhti et al. (2023) with wind only,
+  have not been studied with PV and wind together.
+- **Control.** Optimisation is used to tune the gains of one controller.
+  Learning-based control has been applied to one device with one source
+  (Ahmed and Bayoumi, 2026; Benatallah et al., 2026), not to deciding how two
+  devices share the compensation.
 
-This work addresses the coordinated operation of both devices with both
-sources, with an optimisation and ML layer deciding how they share the
+This work addresses a separate DVR and D-STATCOM on the IEEE 13-bus feeder
+with PV and wind plants, under unsymmetrical faults, with metaheuristic tuning
+as the baseline and an ML layer deciding how the devices share the
 compensation.
 
 ## Workflow
@@ -36,7 +54,7 @@ flowchart TD
 
 | Step | Task | Output | Status |
 |---|---|---|---|
-| 1 | Literature review and research gap | Gap statement, reference list | In progress (8 papers, more to come) |
+| 1 | Literature review and research gap | Gap statement, reference list | In progress (10 papers, more to come) |
 | 2 | Validate IEEE 13-bus benchmark model | Node voltages within 0.01 pu of benchmark | Done |
 | 3 | Base case with faults and non-linear load | Uncompensated sag, THD and unbalance at the sensitive load bus | Done |
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
@@ -354,3 +372,5 @@ Charlotte, released under the MIT License (Copyright (c) 2023 Arun Suresh).
 6. R. K. Varma, S. A. Rahman, T. Vanderheide, "New Control of PV Solar Farm as STATCOM (PV-STATCOM) for Increasing Grid Power Transmission Limits During Night and Day," *IEEE Trans. Power Delivery*, vol. 30, no. 2, pp. 755-763, 2015.
 7. S. Ranjan et al., "Maiden Voltage Control Analysis of Hybrid Power System With Dynamic Voltage Restorer," *IEEE Access*, vol. 9, 2021. doi:10.1109/ACCESS.2021.3071815
 8. R. K. Sah, H. Bhusal, N. K. Mahato, B. Tamang, "Impacts of Photovoltaic Penetration on Transient Stability of Power System," *Proc. 11th IOE Graduate Conference*, 2022.
+9. B. S. Goud, B. L. Rao, "Power Quality Enhancement in Grid-Connected PV/Wind/Battery Using UPQC: Atom Search Optimization," *Journal of Electrical Engineering & Technology*, vol. 16, pp. 821-835, 2021. doi:10.1007/s42835-020-00644-x
+10. S. K. Yadav, K. B. Yadav, A. Priyadarshi, "Performance analysis of three-phase solar PV, BESS, and Wind integrated UPQC for power quality improvement," *Computers and Electrical Engineering*, vol. 116, 109230, 2024. doi:10.1016/j.compeleceng.2024.109230
