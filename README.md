@@ -358,8 +358,17 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `scripts/dg_controller.m` | PV and wind plant models and inverter control (copied into the MATLAB Function blocks) |
 | `scripts/run_dg.m` | Runs the DG scenarios and writes the summary and figures |
 | `scripts/group_blocks.m` | Groups a device's blocks into one subsystem (`D-STATCOM`, `DVR`, `PV Plant`, `Wind Plant`) |
+| `MATLAB_R2022/` | The models in R2022a format with the scripts, for MATLAB R2022a or R2022b |
+| `scripts/export_r2022.m` | Refreshes the `MATLAB_R2022` folder |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
+
+## Older MATLAB releases
+
+The models at the top level are saved in R2024b. The `MATLAB_R2022` folder
+holds the same models saved in R2022a format, with a copy of the scripts and
+its own instructions, for MATLAB R2022a or R2022b. Run `export_r2022` to
+refresh it after the models or scripts change.
 
 ## Requirements
 
