@@ -1,4 +1,4 @@
-function [vinj, dbg] = dvr_controller(vs, vl, il, en)
+function [vinj, dbg] = dvr_controller(vs, vl, il, en, g)
 % DVR control: feed-forward of the missing supply voltage plus PI trim of
 % the load voltage in the synchronous reference frame.
 % The text of this file is copied into the MATLAB Function block of
@@ -6,8 +6,9 @@ function [vinj, dbg] = dvr_controller(vs, vl, il, en)
 %
 %   vs    supply-side phase-to-ground voltage (V)
 %   vl    load-side phase-to-ground voltage (V)
-%   il    load current (A)
+%   il    current through the DVR (A)
 %   en    1 = controller active, 0 = inject nothing
+%   g     load-voltage loop gains [KpV; KiV]; hand-tuned baseline [0.2; 200]
 %
 %   vinj  series voltage command for the averaged converter (V)
 %   dbg   [Pinj; Einj; trimD; trimQ; vLd; vLq; theta; f]
@@ -21,7 +22,7 @@ Vref = 480*sqrt(2/3);                     % V peak, 1 pu phase voltage
 Vmax = 0.5*Vref;                          % injection limit per phase
 N = 333;                                  % samples in one fundamental cycle
 
-KpV = 0.2;   KiV = 200;                   % load-voltage loops
+KpV = g(1);  KiV = g(2);                  % load-voltage loops
 KpPll = 44;  KiPll = 987;                 % PLL, 5 Hz bandwidth
 
 persistent theta xPll xD xQ buf bsum idx E

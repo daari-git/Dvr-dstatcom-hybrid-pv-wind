@@ -1,4 +1,4 @@
-function [vinv, dbg] = dstatcom_controller(vpcc, iL, ic, en, mode)
+function [vinv, dbg] = dstatcom_controller(vpcc, iL, ic, en, mode, g)
 % D-STATCOM control in the synchronous reference frame with PI regulators.
 % The text of this file is copied into the MATLAB Function block of
 % IEEE13_dstatcom.slx by build_dstatcom.
@@ -9,6 +9,8 @@ function [vinv, dbg] = dstatcom_controller(vpcc, iL, ic, en, mode)
 %   en    1 = controller active, 0 = track the grid voltage (no current)
 %   mode  1 = cancel load reactive power, harmonics and unbalance
 %         2 = regulate the voltage magnitude, plus harmonics and unbalance
+%   g     gains: [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV]
+%         hand-tuned baseline: [1500; 1; 15; 5; 500]
 %
 %   vinv  inverter voltage command for the averaged converter (V)
 %   dbg   [Vdc; idRef; iqRef; id; iq; Vd; theta; f]
@@ -24,9 +26,9 @@ Imax = 850;                               % A peak, about 500 kVA at 480 V
 Vref = 480*sqrt(2/3);                     % V peak, 1 pu phase voltage
 N = 333;                                  % samples in one fundamental cycle
 
-KpI = 2*pi*1500*L;  KiI = 2*pi*1500*R;    % current loops
-KpDc = 1.0;         KiDc = 15;            % DC-link voltage loop, A/V
-KpV = 5;            KiV = 500;            % AC voltage loop, A/V
+KpI = 2*pi*g(1)*L;  KiI = 2*pi*g(1)*R;    % current loops
+KpDc = g(2);        KiDc = g(3);          % DC-link voltage loop, A/V
+KpV = g(4);         KiV = g(5);           % AC voltage loop, A/V
 KpPll = 178;        KiPll = 15791;        % PLL, 20 Hz bandwidth
 
 persistent theta xPll xId xIq xDc xV vdc buf bsum idx

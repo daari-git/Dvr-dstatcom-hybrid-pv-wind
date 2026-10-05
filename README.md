@@ -42,7 +42,7 @@ flowchart TD
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
-| 7 | Offline optimisation (PSO or grey wolf) | Device location, rating and PI gains | To do |
+| 7 | Combined model and offline optimisation (PSO) | Device location, rating and PI gains | Partly done: combined model built and PI gains optimised; location and rating not yet |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
@@ -221,6 +221,85 @@ Full results are in `results/dg_summary.csv`. To reproduce:
 addpath('scripts'); build_basecase; build_dg; run_dg;
 ```
 
+## Combined model: DVR, D-STATCOM, PV and wind together
+
+`IEEE13_full.slx` puts all four devices on the feeder. The D-STATCOM and the PV
+plant are on the load side of the DVR, and the rectifier load is on. Devices
+switch on at 0.4 s and the fault runs from 0.8 s to 1.0 s. Results below use
+the hand-tuned PI gains.
+
+| Fault at node 680 | Supply side A / B / C (pu) | Load side A / B / C (pu) | DVR power (kW) | DVR energy (kJ) | Wind plant |
+|---|---|---|---|---|---|
+| Three-phase-to-ground | 0.616 / 0.645 / 0.627 | 0.997 / 1.005 / 0.998 | 44.5 | 8.9 | ceased |
+| Single line-to-ground (A) | 0.620 / 1.132 / 1.119 | 0.998 / 1.005 / 0.997 | 15.1 | 3.0 | 494 kW |
+| Line-to-line (B-C) | 1.008 / 0.747 / 0.749 | 0.996 / 1.012 / 0.992 | 21.6 | 4.3 | 366 kW |
+| Double line-to-ground (B-C) | 1.133 / 0.626 / 0.625 | 0.997 / 1.008 / 0.995 | 17.6 | 3.5 | 333 kW |
+
+- The load stays within about 1 % of nominal in every fault and the source
+  power factor is 1.000.
+- With the PV plant behind it, the DVR needs 44.5 kW in the three-phase fault
+  instead of 156 kW when it works alone, about 70 % less, because the PV plant
+  supplies most of the load locally.
+- The wind plant at node 675 is outside the DVR's protection and still stops
+  injecting in the three-phase fault.
+- Source current THD reads 19 % because the PV plant leaves only a small
+  source current. Measured against the 500 kVA transformer rating the
+  distortion is 3.0 %, so both figures are reported.
+- Load voltage THD is 3.6 %, higher than with either device alone.
+
+![Combined model, single line-to-ground fault](results/full_fault_LG_A.png)
+
+## Optimisation of the PI gains
+
+Particle swarm optimisation (8 particles, 6 iterations, 56 simulations) tunes
+five gains on the combined model. Each candidate is scored on one simulation
+with a single line-to-ground fault. The cost is
+
+`4 x load-voltage error + voltage THD + current distortion + negative-sequence current + 100 x (1 - power factor) + 0.2 x DC-link deviation`
+
+with every term in percent and the two current terms taken against the
+transformer rating. The hand-tuned gains are one of the starting particles.
+
+| Gain | Hand-tuned | Optimised | Search range |
+|---|---|---|---|
+| D-STATCOM current-loop bandwidth (Hz) | 1500 | 1755 | 500 to 2500 |
+| D-STATCOM DC-link Kp (A/V) | 1.0 | 2.35 | 0.2 to 5 |
+| D-STATCOM DC-link Ki (A/V/s) | 15 | 105 | 2 to 200 |
+| DVR load-voltage Kp | 0.2 | 0.90 | 0 to 0.9 |
+| DVR load-voltage Ki | 200 | 20 | 20 to 2000 |
+
+The optimised gains were then tested on all four fault types:
+
+| Quantity | Hand-tuned | Optimised |
+|---|---|---|
+| Cost, four faults | 8.59 / 8.60 / 9.11 / 8.83 | 8.10 / 8.21 / 8.38 / 8.14 |
+| Load voltage THD (%) | 3.55 | 3.01 |
+| Negative-sequence source current (% of rating) | 0.74 | 0.65 |
+| Source current distortion (% of rating) | 3.02 | 3.05 |
+| Load voltage unbalance during fault, four faults (%) | 0.04 / 0.34 / 0.77 / 0.68 | 0.03 / 0.22 / 0.49 / 0.44 |
+| DC-link deviation (%) | 1.4 | 1.7 |
+
+The improvement is small: 4 % on the fault used for tuning and 5 to 8 % on the
+four test faults. The hand-tuned gains were already close to the best the PI
+structure can do here, so the remaining limits are structural (harmonic
+tracking of the current loop, and the wind plant outside the DVR) rather than
+a matter of tuning. Both DVR gains ended on the edge of their search range,
+which means the cost is not sensitive to them and those values should not be
+read as an optimum.
+
+A first run without the voltage THD term lowered its cost by 17 % but raised
+load voltage THD from 3.55 % to 4.68 %, so the term was added and the run
+repeated. Device location and rating have not been optimised.
+
+![Optimisation convergence](results/optim_convergence.png)
+
+To reproduce (the optimisation takes about 10 minutes on four cores and needs
+the Global Optimization and Parallel Computing toolboxes):
+
+```matlab
+addpath('scripts'); build_basecase; build_full; optimise_gains; run_full;
+```
+
 ## Contents
 
 | File | Description |
@@ -230,14 +309,20 @@ addpath('scripts'); build_basecase; build_dg; run_dg;
 | `scripts/build_basecase.m` | Builds `IEEE13_basecase.slx` from the IEEE 13 model |
 | `scripts/run_basecase.m` | Runs the base-case scenarios and writes the summary and figures |
 | `IEEE13_dstatcom.slx` | Base-case model plus the D-STATCOM at node 634 and its controller |
-| `scripts/build_dstatcom.m` | Builds `IEEE13_dstatcom.slx` from the base-case model |
+| `scripts/build_dstatcom.m` | Builds `IEEE13_dstatcom.slx` |
 | `scripts/dstatcom_controller.m` | D-STATCOM control code (copied into the model's MATLAB Function block) |
 | `scripts/run_dstatcom.m` | Runs the D-STATCOM scenarios and writes the summary and figures |
 | `IEEE13_dvr.slx` | Base-case model plus the series DVR at node 634 and its controller |
-| `scripts/build_dvr.m` | Builds `IEEE13_dvr.slx` from the base-case model |
+| `scripts/build_dvr.m` | Builds `IEEE13_dvr.slx` |
 | `scripts/dvr_controller.m` | DVR control code (copied into the model's MATLAB Function block) |
 | `scripts/run_dvr.m` | Runs the DVR scenarios and writes the summary and figures |
 | `IEEE13_dg.slx` | Base-case model plus the PV plant at node 634 and the wind plant at node 675 |
+| `IEEE13_full.slx` | Base-case model plus the DVR, the D-STATCOM, the PV plant and the wind plant |
+| `scripts/build_full.m`, `scripts/run_full.m` | Build the combined model; run its four faults with hand-tuned and optimised gains |
+| `scripts/optimise_gains.m` | Particle swarm optimisation of the PI gains |
+| `scripts/full_input.m`, `scripts/full_metrics.m` | One simulation setup of the combined model, and its performance measures and cost |
+| `scripts/add_dvr.m`, `scripts/add_dstatcom.m` | Add the DVR or the D-STATCOM to a model built from the base case |
+| `scripts/log_source_current.m` | Logs the source-side current at node 634 |
 | `scripts/add_dg.m` | Adds the two plants to a model built from the base case |
 | `scripts/build_dg.m` | Builds `IEEE13_dg.slx` |
 | `scripts/dg_controller.m` | PV and wind plant models and inverter control (copied into the MATLAB Function blocks) |
@@ -250,7 +335,8 @@ addpath('scripts'); build_basecase; build_dg; run_dg;
 
 - MATLAB R2024b (the model was saved in R2019b and opens in later releases)
 - Simulink and Simscape Electrical (Specialized Power Systems)
-- Later steps: Global Optimization Toolbox, Deep Learning Toolbox
+- Step 7: Global Optimization Toolbox and Parallel Computing Toolbox
+- Later steps: Deep Learning Toolbox
 
 ## Acknowledgement
 
