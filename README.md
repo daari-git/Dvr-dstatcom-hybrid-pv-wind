@@ -60,7 +60,7 @@ flowchart TD
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
-| 7 | Combined model and offline optimisation (PSO) | Device location, rating and PI gains | Partly done: combined model built and PI gains optimised; location and rating not yet |
+| 7 | Combined model and offline optimisation (PSO and grey wolf) | Device location, rating and PI gains | Partly done: combined model built and PI gains optimised with both methods; location and rating not yet |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
@@ -267,55 +267,67 @@ the hand-tuned PI gains.
 
 ![Combined model, single line-to-ground fault](results/full_fault_LG_A.png)
 
+(The figure is drawn with the grey wolf gains, the set with the lowest mean cost.)
+
 ## Optimisation of the PI gains
 
-Particle swarm optimisation (8 particles, 6 iterations, 56 simulations) tunes
-five gains on the combined model. Each candidate is scored on one simulation
-with a single line-to-ground fault. The cost is
+Two optimisers tune five gains on the combined model: particle swarm (PSO) and
+the grey wolf optimiser (GWO). Both use 8 agents, 6 iterations (56 simulations)
+and the same starting population, which includes the hand-tuned gains. Each
+candidate is scored on one simulation with a single line-to-ground fault. The
+cost is
 
 `4 x load-voltage error + voltage THD + current distortion + negative-sequence current + 100 x (1 - power factor) + 0.2 x DC-link deviation`
 
 with every term in percent and the two current terms taken against the
-transformer rating. The hand-tuned gains are one of the starting particles.
+transformer rating.
 
-| Gain | Hand-tuned | Optimised | Search range |
+| Gain | Hand-tuned | PSO | GWO | Search range |
+|---|---|---|---|---|
+| D-STATCOM current-loop bandwidth (Hz) | 1500 | 1755 | 1570 | 500 to 2500 |
+| D-STATCOM DC-link Kp (A/V) | 1.0 | 2.35 | 2.35 | 0.2 to 5 |
+| D-STATCOM DC-link Ki (A/V/s) | 15 | 105 | 27 | 2 to 200 |
+| DVR load-voltage Kp | 0.2 | 0.90 | 0.90 | 0 to 0.9 |
+| DVR load-voltage Ki | 200 | 20 | 319 | 20 to 2000 |
+| Cost on the tuning fault | 8.632 | 8.261 | 8.213 | |
+| Reduction from hand-tuned | | 4.3 % | 4.9 % | |
+
+Each gain set was then tested on all four fault types:
+
+| Quantity | Hand-tuned | PSO | GWO |
 |---|---|---|---|
-| D-STATCOM current-loop bandwidth (Hz) | 1500 | 1755 | 500 to 2500 |
-| D-STATCOM DC-link Kp (A/V) | 1.0 | 2.35 | 0.2 to 5 |
-| D-STATCOM DC-link Ki (A/V/s) | 15 | 105 | 2 to 200 |
-| DVR load-voltage Kp | 0.2 | 0.90 | 0 to 0.9 |
-| DVR load-voltage Ki | 200 | 20 | 20 to 2000 |
-
-The optimised gains were then tested on all four fault types:
-
-| Quantity | Hand-tuned | Optimised |
-|---|---|---|
-| Cost, four faults | 8.59 / 8.60 / 9.11 / 8.83 | 8.10 / 8.21 / 8.38 / 8.14 |
-| Load voltage THD (%) | 3.55 | 3.01 |
-| Negative-sequence source current (% of rating) | 0.74 | 0.65 |
-| Source current distortion (% of rating) | 3.02 | 3.05 |
-| Load voltage unbalance during fault, four faults (%) | 0.04 / 0.34 / 0.77 / 0.68 | 0.03 / 0.22 / 0.49 / 0.44 |
-| DC-link deviation (%) | 1.4 | 1.7 |
-
-The improvement is small: 4 % on the fault used for tuning and 5 to 8 % on the
-four test faults. The hand-tuned gains were already close to the best the PI
-structure can do here, so the remaining limits are structural (harmonic
-tracking of the current loop, and the wind plant outside the DVR) rather than
-a matter of tuning. Both DVR gains ended on the edge of their search range,
-which means the cost is not sensitive to them and those values should not be
-read as an optimum.
-
-A first run without the voltage THD term lowered its cost by 17 % but raised
-load voltage THD from 3.55 % to 4.68 %, so the term was added and the run
-repeated. Device location and rating have not been optimised.
+| Cost, four faults | 8.59 / 8.60 / 9.11 / 8.83 | 8.10 / 8.21 / 8.38 / 8.14 | 8.06 / 8.17 / 8.38 / 8.13 |
+| Load voltage THD (%) | 3.55 | 3.01 | 2.88 |
+| Negative-sequence source current (% of rating) | 0.74 | 0.65 | 0.71 |
+| Source current distortion (% of rating) | 3.02 | 3.05 | 3.14 |
+| Load voltage unbalance during fault, four faults (%) | 0.04 / 0.34 / 0.77 / 0.68 | 0.03 / 0.22 / 0.49 / 0.44 | 0.02 / 0.21 / 0.48 / 0.43 |
+| DC-link deviation (%) | 1.4 | 1.7 | 1.4 |
 
 ![Optimisation convergence](results/optim_convergence.png)
 
-To reproduce (the optimisation takes about 10 minutes on four cores and needs
-the Global Optimization and Parallel Computing toolboxes):
+- Both optimisers improve on the hand-tuned gains by a small amount: 4 to 5 %
+  on the fault used for tuning and 5 to 8 % on the four test faults.
+- GWO finishes 0.6 % below PSO. With one run each and 56 simulations, that
+  difference is too small to rank the two methods; repeated runs with
+  different seeds would be needed.
+- The two agree on the D-STATCOM DC-link Kp (2.35) and push the DVR Kp to the
+  top of its range, but disagree on both integral gains. The cost is not
+  sensitive to those, so they should not be read as optima.
+- The hand-tuned gains were already close to the best the PI structure can do
+  here. The remaining limits are structural (harmonic tracking of the current
+  loop, and the wind plant outside the DVR) rather than a matter of tuning.
+
+An earlier PSO run without the voltage THD term lowered its cost by 17 % but
+raised load voltage THD from 3.55 % to 4.68 %, so the term was added and the
+runs repeated. Device location and rating have not been optimised.
+
+To reproduce (each optimisation takes about 10 minutes on four cores and needs
+the Parallel Computing Toolbox; PSO also needs the Global Optimization
+Toolbox):
 
 ```matlab
-addpath('scripts'); build_basecase; build_full; optimise_gains; run_full;
+addpath('scripts'); build_basecase; build_full;
+optimise_gains('pso'); optimise_gains('gwo'); run_full;
 ```
 
 ## Contents
@@ -336,8 +348,8 @@ addpath('scripts'); build_basecase; build_full; optimise_gains; run_full;
 | `scripts/run_dvr.m` | Runs the DVR scenarios and writes the summary and figures |
 | `IEEE13_dg.slx` | Base-case model plus the PV plant at node 634 and the wind plant at node 675 |
 | `IEEE13_full.slx` | Base-case model plus the DVR, the D-STATCOM, the PV plant and the wind plant |
-| `scripts/build_full.m`, `scripts/run_full.m` | Build the combined model; run its four faults with hand-tuned and optimised gains |
-| `scripts/optimise_gains.m` | Particle swarm optimisation of the PI gains |
+| `scripts/build_full.m`, `scripts/run_full.m` | Build the combined model; run its four faults with the hand-tuned, PSO and GWO gains |
+| `scripts/optimise_gains.m` | Particle swarm and grey wolf optimisation of the PI gains |
 | `scripts/full_input.m`, `scripts/full_metrics.m` | One simulation setup of the combined model, and its performance measures and cost |
 | `scripts/add_dvr.m`, `scripts/add_dstatcom.m` | Add the DVR or the D-STATCOM to a model built from the base case |
 | `scripts/log_source_current.m` | Logs the source-side current at node 634 |
@@ -374,3 +386,4 @@ Charlotte, released under the MIT License (Copyright (c) 2023 Arun Suresh).
 8. R. K. Sah, H. Bhusal, N. K. Mahato, B. Tamang, "Impacts of Photovoltaic Penetration on Transient Stability of Power System," *Proc. 11th IOE Graduate Conference*, 2022.
 9. B. S. Goud, B. L. Rao, "Power Quality Enhancement in Grid-Connected PV/Wind/Battery Using UPQC: Atom Search Optimization," *Journal of Electrical Engineering & Technology*, vol. 16, pp. 821-835, 2021. doi:10.1007/s42835-020-00644-x
 10. S. K. Yadav, K. B. Yadav, A. Priyadarshi, "Performance analysis of three-phase solar PV, BESS, and Wind integrated UPQC for power quality improvement," *Computers and Electrical Engineering*, vol. 116, 109230, 2024. doi:10.1016/j.compeleceng.2024.109230
+11. S. Mirjalili, S. M. Mirjalili, A. Lewis, "Grey Wolf Optimizer," *Advances in Engineering Software*, vol. 69, pp. 46-61, 2014. (Method reference, cited from memory; not among the reviewed PDFs.)

@@ -1,8 +1,9 @@
 function T = run_full()
 % Runs the four fault scenarios on IEEE13_full.slx (DVR, D-STATCOM, PV and
-% wind together) with the hand-tuned gains and, if optimise_gains has been
-% run, with the optimised gains. Writes results/full_summary.csv and one
-% figure per fault. Run build_basecase and build_full first.
+% wind together) with the hand-tuned gains and with each set of gains found
+% by optimise_gains ('pso', 'gwo'). Writes results/full_summary.csv and one
+% figure per fault, drawn for the gain set with the lowest mean cost.
+% Run build_basecase and build_full first.
 
 root = fileparts(fileparts(mfilename('fullpath')));
 outd = fullfile(root, 'results');
@@ -13,10 +14,13 @@ tl = struct('tNL', 0.3, 'tDev', 0.4, 'tOn', 0.8, 'tOff', 1.0, 'tStop', 1.2, ...
 scen = {'fault_LLLG', 'ABC', 'on'; 'fault_LG_A', 'A', 'on'; ...
         'fault_LL_BC', 'BC', 'off'; 'fault_LLG_BC', 'BC', 'on'};
 sets = {'hand_tuned', [1500; 1; 15; 5; 500], [0.2; 200]};
-best = fullfile(outd, 'optim_best.csv');
-if exist(best, 'file')
-    x = readmatrix(best);
-    sets(2, :) = {'optimised', [x(1); x(2); x(3); 5; 500], [x(4); x(5)]};
+meth = {'pso', 'gwo'};
+for k = 1:numel(meth)
+    f = fullfile(outd, sprintf('optim_%s_best.csv', meth{k}));
+    if exist(f, 'file')
+        x = readmatrix(f);
+        sets(end+1, :) = {meth{k}, [x(1); x(2); x(3); 5; 500], [x(4); x(5)]}; %#ok<AGROW>
+    end
 end
 
 in = Simulink.SimulationInput.empty; tag = {};
@@ -35,9 +39,11 @@ for k = 1:numel(out)
         m.Vl_fault(1), m.Vl_fault(2), m.Vl_fault(3), m.Vunb_fault, m.eV, ...
         m.PF, m.Q_kvar, m.THDi, m.TDD, m.Iunb, m.I2, m.THDv, m.VdcDev, m.Pdvr_kW, m.Edvr_kJ, ...
         m.Ppv_kW, m.Pwind_kW, m.wind_ceased, m.J}; %#ok<AGROW>
-    if strcmp(tag{k, 1}, sets{end, 1})
-        plot_scenario(out(k), tag{k, 2}, tag{k, 1}, tl, outd);
-    end
+end
+J = cell2mat(rows(:, end));
+[~, g] = min(arrayfun(@(i) mean(J(strcmp(tag(:, 1), sets{i, 1}))), 1:size(sets, 1)));
+for k = find(strcmp(tag(:, 1), sets{g, 1}))'
+    plot_scenario(out(k), tag{k, 2}, tag{k, 1}, tl, outd);
 end
 T = cell2table(rows, 'VariableNames', {'gains', 'scenario', ...
     'Vs_a_pu', 'Vs_b_pu', 'Vs_c_pu', 'Vl_a_pu', 'Vl_b_pu', 'Vl_c_pu', 'Vl_unb_pct', ...
