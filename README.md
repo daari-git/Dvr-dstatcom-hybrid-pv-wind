@@ -311,7 +311,7 @@ wolf, bat, whale and differential evolution. Each uses 8 agents, 6 iterations
 (56 simulations) and, for a given seed, the same starting population. Three
 seeds are run per method so that the ranking rests on a mean, not on one run.
 
-Status at 07 October 2026, 00:53: 9 of 15 runs finished. The table is partial and the
+Status at 07 October 2026, 00:54: 10 of 15 runs finished. The table is partial and the
 order may change as the remaining runs complete. The hand-tuned cost is
 8.632; lower is better. Methods are ordered by their mean so far, which
 is not yet comparable between methods with different numbers of finished runs.
@@ -319,8 +319,8 @@ is not yet comparable between methods with different numbers of finished runs.
 | Method | Seed 1 | Seed 2 | Seed 3 | Mean so far | Reduction from hand-tuned |
 |---|---|---|---|---|---|
 | Particle swarm | 8.261 | 8.223 | running or queued | 8.242 | 4.5 % |
-| Differential evolution | 8.246 | running or queued | running or queued | 8.246 | 4.5 % |
 | Grey wolf | 8.213 | 8.511 | running or queued | 8.362 | 3.1 % |
+| Differential evolution | 8.246 | 8.540 | running or queued | 8.393 | 2.8 % |
 | Bat | 8.237 | 8.626 | running or queued | 8.431 | 2.3 % |
 | Whale | 8.255 | 8.618 | running or queued | 8.437 | 2.3 % |
 
