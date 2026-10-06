@@ -82,6 +82,39 @@ flowchart TD
 - Low-voltage ride-through compliance (IEEE 1547-2018)
 - ML accuracy and inference time (target: within a quarter to half cycle)
 
+## Simulink models
+
+The benchmark feeder, as supplied by its authors (`IEEE13bus_v2019b_Discrete.slx`):
+
+![IEEE 13-bus feeder model](docs/model_feeder.png)
+
+The combined model (`IEEE13_full.slx`): the feeder with the fault block at node
+680, the rectifier load at node 634, and the `DVR`, `D-STATCOM`, `PV Plant` and
+`Wind Plant` subsystems. The other models are subsets of this one.
+
+![Combined model](docs/model_full.png)
+
+Inside the `DVR` subsystem: the controller, three series voltage sources and
+the series impedance.
+
+![DVR subsystem](docs/model_dvr.png)
+
+Inside the `D-STATCOM` subsystem: the controller, three voltage sources, the
+coupling filter, the current measurement and the breaker.
+
+![D-STATCOM subsystem](docs/model_dstatcom.png)
+
+Inside the `PV Plant` subsystem. The `Wind Plant` subsystem has the same
+structure with a wind-speed profile in place of irradiance.
+
+![PV plant subsystem](docs/model_pv_plant.png)
+
+![Wind plant subsystem](docs/model_wind_plant.png)
+
+The blocks are placed by the build scripts, so some labels and wires overlap.
+The models are meant to be opened in Simulink, where each block can be
+inspected.
+
 ## Base-case results (no compensation)
 
 Fault at node 680 from 0.8 s to 1.0 s (fault resistance 0.01 ohm). Voltages are
@@ -278,7 +311,7 @@ wolf, bat, whale and differential evolution. Each uses 8 agents, 6 iterations
 (56 simulations) and, for a given seed, the same starting population. Three
 seeds are run per method so that the ranking rests on a mean, not on one run.
 
-Status at 07 October 2026, 00:24: 6 of 15 runs finished. The table is partial and the
+Status at 07 October 2026, 00:32: 6 of 15 runs finished. The table is partial and the
 order may change as the remaining runs complete. The hand-tuned cost is
 8.632; lower is better. Methods are ordered by their mean so far, which
 is not yet comparable between methods with different numbers of finished runs.
@@ -384,6 +417,7 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `scripts/group_blocks.m` | Groups a device's blocks into one subsystem (`D-STATCOM`, `DVR`, `PV Plant`, `Wind Plant`) |
 | `MATLAB_R2022/` | The models in R2022a format with the scripts, for MATLAB R2022a or R2022b |
 | `scripts/export_r2022.m` | Refreshes the `MATLAB_R2022` folder |
+| `docs/` | Pictures of the Simulink models shown in this README |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 
