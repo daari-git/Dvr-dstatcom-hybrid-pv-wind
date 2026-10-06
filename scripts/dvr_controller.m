@@ -8,7 +8,7 @@ function [vinj, dbg] = dvr_controller(vs, vl, il, en, g)
 %   vl    load-side phase-to-ground voltage (V)
 %   il    current through the DVR (A)
 %   en    1 = controller active, 0 = inject nothing
-%   g     load-voltage loop gains [KpV; KiV]; hand-tuned baseline [0.2; 200]
+%   g     [KpV; KiV; injection limit (pu)]; hand-tuned baseline [0.2; 200; 0.5]
 %
 %   vinj  series voltage command for the averaged converter (V)
 %   dbg   [Pinj; Einj; trimD; trimQ; vLd; vLq; theta; f]
@@ -19,7 +19,7 @@ function [vinj, dbg] = dvr_controller(vs, vl, il, en, g)
 
 Ts = 50e-6; w0 = 2*pi*60;
 Vref = 480*sqrt(2/3);                     % V peak, 1 pu phase voltage
-Vmax = 0.5*Vref;                          % injection limit per phase
+Vmax = g(3)*Vref;                         % injection limit per phase
 N = 333;                                  % samples in one fundamental cycle
 
 KpV = g(1);  KiV = g(2);                  % load-voltage loops

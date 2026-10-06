@@ -1,15 +1,23 @@
-function best = optimise_gains(method)
+function best = optimise_gains(method, seed)
 % Optimises the PI gains of the D-STATCOM and the DVR on IEEE13_full.slx.
-%   method  'pso' particle swarm (default) or 'gwo' grey wolf optimiser
+%   method  'pso'  particle swarm (default)
+%           'gwo'  grey wolf optimiser
+%           'ba'   bat algorithm
+%           'woa'  whale optimisation algorithm
+%           'de'   differential evolution
+%   seed    random seed (default 1); sets the starting population
 % Each candidate is scored by one simulation with a single line-to-ground
 % fault (a sag and a swell together); see full_metrics for the cost.
-% Both methods use 8 agents, 6 iterations and the same starting population,
-% which includes the hand-tuned gains.
-% Writes results/optim_<method>_best.csv, results/optim_<method>_history.csv
-% and results/optim_convergence.png (all methods run so far).
+% Every method uses 8 agents and 6 iterations (56 simulations) and, for a
+% given seed, the same starting population, which includes the hand-tuned
+% gains.
+% Writes results/optim_<method>_s<seed>_history.csv and updates
+% results/optim_<method>_best.csv with the best gains over all seeds run.
 % Run build_basecase and build_full first. Takes about 10 minutes.
 
 if nargin < 1, method = 'pso'; end
+if nargin < 2, seed = 1; end
+method = lower(method);
 root = fileparts(fileparts(mfilename('fullpath')));
 outd = fullfile(root, 'results');
 if ~exist(outd, 'dir'), mkdir(outd); end
@@ -21,13 +29,14 @@ lb = [ 500 0.2   2 0    20];
 ub = [2500 5   200 0.9 2000];
 tl = struct('tNL', 0.3, 'tDev', 0.35, 'tOn', 0.55, 'tOff', 0.7, 'tStop', 0.8, ...
     'tSteady', 0.49, 'tFault', 0.62);
-agents = 8; iters = 6; d = numel(x0);
+n = 8; iters = 6; d = numel(x0);
+clip = @(X) min(max(X, lb), ub);
 
 hist = zeros(0, d + 1);
     function J = cost(X)
         in = Simulink.SimulationInput.empty;
         for k = 1:size(X, 1)
-            in(k) = full_input('A', 'on', tl, [X(k, 1:3) 5 500], X(k, 4:5));
+            in(k) = full_input('A', 'on', tl, [X(k, 1:3) 5 500 850], [X(k, 4:5) 0.5]);
         end
         out = parsim(in, 'ShowProgress', 'off', ...
             'SetupFcn', @() addpath(root, fullfile(root, 'scripts')));
@@ -37,76 +46,123 @@ hist = zeros(0, d + 1);
             J(k) = m.J;
         end
         hist = [hist; X J];
-        fprintf('%s: evaluated %d candidates, best so far %.3f\n', ...
-            method, size(hist, 1), min(hist(:, end)));
+        fprintf('%s seed %d: evaluated %d candidates, best so far %.3f\n', ...
+            method, seed, size(hist, 1), min(hist(:, end)));
     end
 
-rng(1);                                         % repeatable, same start for both
-init = [x0; lb + rand(agents - 1, d) .* (ub - lb)];
+rng(seed);                                      % repeatable; same start for all methods
+X = [x0; lb + rand(n - 1, d) .* (ub - lb)];
 
-switch lower(method)
+switch method
     case 'pso'
-        opt = optimoptions('particleswarm', 'SwarmSize', agents, 'MaxIterations', iters, ...
-            'UseVectorized', true, 'InitialSwarmMatrix', init, 'Display', 'iter');
-        [best, Jbest] = particleswarm(@cost, d, lb, ub, opt);
+        opt = optimoptions('particleswarm', 'SwarmSize', n, 'MaxIterations', iters, ...
+            'UseVectorized', true, 'InitialSwarmMatrix', X, 'Display', 'off');
+        particleswarm(@cost, d, lb, ub, opt);
+
     case 'gwo'
-        % Grey wolf optimiser (Mirjalili et al., 2014): every wolf moves
-        % toward the three best positions found so far, with a step that
-        % shrinks from exploration (a = 2) to exploitation (a = 0).
-        X = init; J = cost(X);
+        % Grey wolf optimiser: every wolf moves toward the three best
+        % positions found so far, with a step that shrinks from
+        % exploration (a = 2) to exploitation (a = 0).
+        J = cost(X);
         [Js, order] = sort(J);
         lead = X(order(1:3), :); leadJ = Js(1:3);       % alpha, beta, delta
         for it = 1:iters
             a = 2 - 2*it/iters;
-            Xn = zeros(size(X));
+            Xn = zeros(n, d);
             for k = 1:3
-                A = 2*a*rand(agents, d) - a;
-                C = 2*rand(agents, d);
+                A = 2*a*rand(n, d) - a;
+                C = 2*rand(n, d);
                 Xn = Xn + lead(k, :) - A .* abs(C .* lead(k, :) - X);
             end
-            X = min(max(Xn/3, lb), ub);
+            X = clip(Xn/3);
             J = cost(X);
             [Js, order] = sort([leadJ; J]);
             pool = [lead; X];
             lead = pool(order(1:3), :); leadJ = Js(1:3);
         end
-        best = lead(1, :); Jbest = leadJ(1);
+
+    case 'ba'
+        % Bat algorithm: each bat flies toward the best position at a
+        % random frequency, or takes a small random walk around the best.
+        % A move is kept if it is better and passes the loudness test;
+        % loudness then falls and the pulse rate rises.
+        fmax = 2; A = 0.9*ones(n, 1); alpha = 0.9; r0 = 0.9; gamma = 0.9;
+        J = cost(X); V = zeros(n, d);
+        [Jb, ib] = min(J); xb = X(ib, :);
+        for it = 1:iters
+            r = r0*(1 - exp(-gamma*it));
+            V = V + (X - xb) .* (fmax*rand(n, 1));
+            Xn = X + V;
+            walk = rand(n, 1) > r;
+            Xn(walk, :) = xb + 0.1*mean(A)*(2*rand(nnz(walk), d) - 1) .* (ub - lb);
+            Xn = clip(Xn);
+            Jn = cost(Xn);
+            keep = Jn <= J & rand(n, 1) < A;
+            X(keep, :) = Xn(keep, :); J(keep) = Jn(keep);
+            A(keep) = alpha*A(keep);
+            [Jm, im] = min(Jn);
+            if Jm < Jb, Jb = Jm; xb = Xn(im, :); end
+        end
+
+    case 'woa'
+        % Whale optimisation algorithm: each whale either encircles the
+        % best position (or a random whale while exploring) or moves
+        % along a spiral toward the best.
+        J = cost(X);
+        [Jb, ib] = min(J); xb = X(ib, :);
+        for it = 1:iters
+            a = 2 - 2*it/iters;
+            Xn = X;
+            for k = 1:n
+                A = 2*a*rand - a; C = 2*rand; l = 2*rand - 1;
+                if rand < 0.5
+                    if abs(A) < 1, ref = xb; else, ref = X(randi(n), :); end
+                    Xn(k, :) = ref - A*abs(C*ref - X(k, :));
+                else
+                    Xn(k, :) = abs(xb - X(k, :)) * exp(l) * cos(2*pi*l) + xb;
+                end
+            end
+            X = clip(Xn);
+            J = cost(X);
+            [Jm, im] = min(J);
+            if Jm < Jb, Jb = Jm; xb = X(im, :); end
+        end
+
+    case 'de'
+        % Differential evolution (rand/1/bin): each trial vector is a
+        % third member plus the scaled difference of two others, crossed
+        % with the current member; it replaces the member if it is better.
+        F = 0.5; CR = 0.9;
+        J = cost(X);
+        for it = 1:iters
+            U = X;
+            for k = 1:n
+                others = setdiff(1:n, k);
+                pick = others(randperm(n - 1, 3));
+                v = X(pick(1), :) + F*(X(pick(2), :) - X(pick(3), :));
+                cross = rand(1, d) < CR; cross(randi(d)) = true;
+                U(k, cross) = v(cross);
+            end
+            U = clip(U);
+            Ju = cost(U);
+            better = Ju < J;
+            X(better, :) = U(better, :); J(better) = Ju(better);
+        end
+
     otherwise
-        error('method must be ''pso'' or ''gwo''');
+        error('method must be pso, gwo, ba, woa or de');
 end
 
-writematrix(best, fullfile(outd, sprintf('optim_%s_best.csv', method)));
 writetable(array2table(hist, 'VariableNames', [names {'cost'}]), ...
-    fullfile(outd, sprintf('optim_%s_history.csv', method)));
-fprintf('%s: baseline cost %.3f, optimised cost %.3f\n', method, hist(1, end), Jbest);
-disp(array2table([x0; best], 'VariableNames', names, 'RowNames', {'hand_tuned', method}));
+    fullfile(outd, sprintf('optim_%s_s%d_history.csv', method, seed)));
+[Jbest, ib] = min(hist(:, end)); best = hist(ib, 1:d);
+fprintf('%s seed %d: hand-tuned cost %.3f, optimised cost %.3f\n', ...
+    method, seed, hist(1, end), Jbest);
 
-plot_convergence(outd, agents);
-end
-
-function plot_convergence(outd, agents)
-% Best cost found after each evaluation of the population, per method
-ink = [0.25 0.25 0.25];
-meth = {'pso', 'gwo'}; lab = {'Particle swarm', 'Grey wolf'};
-col = [42 120 214; 235 104 52] / 255;
-fig = figure('Visible', 'off', 'Color', 'w', 'Position', [100 100 760 380]);
-ax = axes(fig); hold(ax, 'on'); used = {}; base = NaN;
-for k = 1:numel(meth)
-    f = fullfile(outd, sprintf('optim_%s_history.csv', meth{k}));
-    if ~exist(f, 'file'), continue; end
-    J = readmatrix(f); J = J(:, end); base = J(1);
-    b = cummin(min(reshape(J, agents, []), [], 1))';
-    plot(ax, (0:numel(b) - 1)', b, '-o', 'Color', col(k, :), 'LineWidth', 2, ...
-        'MarkerFaceColor', col(k, :), 'MarkerSize', 6);
-    used{end+1} = lab{k}; %#ok<AGROW>
-end
-yline(ax, base, ':', 'hand-tuned gains', 'Color', ink, ...
-    'LabelHorizontalAlignment', 'right', 'HandleVisibility', 'off');
-xlabel(ax, 'Iteration'); ylabel(ax, 'Best cost');
-title(ax, 'Optimisation of the PI gains', 'Color', ink);
-legend(ax, used, 'Location', 'eastoutside', 'Box', 'off');
-grid(ax, 'on'); box(ax, 'off'); ax.GridColor = [0.85 0.85 0.85]; ax.GridAlpha = 1;
-ax.XColor = ink; ax.YColor = ink;
-exportgraphics(fig, fullfile(outd, 'optim_convergence.png'), 'Resolution', 200);
-close(fig);
+% Best gains for this method over every seed run so far
+f = dir(fullfile(outd, sprintf('optim_%s_s*_history.csv', method)));
+all = [];
+for k = 1:numel(f), all = [all; readmatrix(fullfile(f(k).folder, f(k).name))]; end %#ok<AGROW>
+[~, ib] = min(all(:, end));
+writematrix(all(ib, 1:d), fullfile(outd, sprintf('optim_%s_best.csv', method)));
 end

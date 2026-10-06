@@ -60,7 +60,7 @@ flowchart TD
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
-| 7 | Combined model and offline optimisation (PSO and grey wolf) | Device location, rating and PI gains | Partly done: combined model built and PI gains optimised with both methods; location and rating not yet |
+| 7 | Combined model and offline optimisation | Device location, rating and PI gains | In progress: combined model built; PSO and grey wolf results below; a five-method comparison (PSO, grey wolf, bat, whale, differential evolution, three seeds each) and the placement and rating study are running |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |

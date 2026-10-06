@@ -9,8 +9,8 @@ function [vinv, dbg] = dstatcom_controller(vpcc, iL, ic, en, mode, g)
 %   en    1 = controller active, 0 = track the grid voltage (no current)
 %   mode  1 = cancel load reactive power, harmonics and unbalance
 %         2 = regulate the voltage magnitude, plus harmonics and unbalance
-%   g     gains: [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV]
-%         hand-tuned baseline: [1500; 1; 15; 5; 500]
+%   g     [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV; Imax (A peak)]
+%         hand-tuned baseline: [1500; 1; 15; 5; 500; 850]
 %
 %   vinv  inverter voltage command for the averaged converter (V)
 %   dbg   [Vdc; idRef; iqRef; id; iq; Vd; theta; f]
@@ -22,7 +22,7 @@ function [vinv, dbg] = dstatcom_controller(vpcc, iL, ic, en, mode, g)
 Ts = 50e-6; w0 = 2*pi*60;
 L = 0.2e-3; R = 5e-3; C = 10e-3;          % coupling filter and DC capacitor
 VdcRef = 1000;                            % V
-Imax = 850;                               % A peak, about 500 kVA at 480 V
+Imax = g(6);                              % current limit; 850 A peak is about 500 kVA
 Vref = 480*sqrt(2/3);                     % V peak, 1 pu phase voltage
 N = 333;                                  % samples in one fundamental cycle
 
