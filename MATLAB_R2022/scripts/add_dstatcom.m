@@ -1,10 +1,13 @@
-function add_dstatcom(mdl)
+function add_dstatcom(mdl, side)
 % Adds the D-STATCOM (averaged voltage source converter with coupling
 % filter) at node 634 of a loaded model built from the IEEE 13-bus base
 % case, with its controller and logging, grouped into the 'D-STATCOM'
-% subsystem. If a DVR is present it must be added first: the D-STATCOM then
-% sits on the load side of the DVR.
+% subsystem.
+%   side  'load' (default): at node 634, on the load side of a DVR
+%         'supply': after the transformer, on the supply side of a DVR
+% If a DVR is present it must be added first.
 
+if nargin < 2, side = 'load'; end
 here = fileparts(mfilename('fullpath'));
 libs = {'spsControlledVoltageSourceLib', 'spsThreePhaseSeriesRLCBranchLib', ...
     'spsThreePhaseVIMeasurementLib', 'spsThreePhaseBreakerLib', ...
@@ -39,7 +42,11 @@ add_block('spsGroundLib/Ground', [mdl '/DST Ground'], ...
 pflt = get_param(flt, 'PortHandles');
 pmea = get_param(mea, 'PortHandles');
 pbrk = get_param(brk, 'PortHandles');
-p634 = get_param([mdl '/634'], 'PortHandles');
+if strcmp(side, 'supply')
+    pcon = get_param([mdl '/XFXFM1'], 'PortHandles'); pcon = pcon.RConn;
+else
+    pcon = get_param([mdl '/634'], 'PortHandles'); pcon = pcon.LConn;
+end
 pnr  = get_param([mdl '/DST Neutral R'], 'PortHandles');
 pgnd = get_param([mdl '/DST Ground'], 'PortHandles');
 ph = 'ABC';
@@ -53,7 +60,7 @@ for k = 1:3
     add_line(mdl, pc.LConn(1), pnr.RConn(1), 'autorouting', 'on');    % - to neutral
     add_line(mdl, pflt.RConn(k), pmea.LConn(k), 'autorouting', 'on');
     add_line(mdl, pmea.RConn(k), pbrk.LConn(k), 'autorouting', 'on');
-    add_line(mdl, pbrk.RConn(k), p634.LConn(k), 'autorouting', 'on');
+    add_line(mdl, pbrk.RConn(k), pcon(k), 'autorouting', 'on');
 end
 add_line(mdl, pnr.LConn(1), pgnd.LConn(1), 'autorouting', 'on');
 
@@ -80,9 +87,9 @@ add_block('simulink/Sources/Step', [mdl '/DST Enable'], ...
     'Time', '100', 'Before', '0', 'After', '1', 'SampleTime', '50e-6');
 add_block('simulink/Sources/Constant', [mdl '/DST Mode'], ...
     'Position', [x0-260 y0+95 x0-230 y0+115], 'Value', '1', 'SampleTime', '50e-6');
-% Gains: [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV]
+% Gains and rating: [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV; Imax]
 add_block('simulink/Sources/Constant', [mdl '/DST Gains'], ...
-    'Position', [x0-330 y0+125 x0-230 y0+145], 'Value', '[1500; 1; 15; 5; 500]', ...
+    'Position', [x0-330 y0+125 x0-230 y0+145], 'Value', '[1500; 1; 15; 5; 500; 850]', ...
     'SampleTime', '50e-6');
 add_line(mdl, 'DST Enable/1', 'DST Controller/4', 'autorouting', 'on');
 add_line(mdl, 'DST Mode/1', 'DST Controller/5', 'autorouting', 'on');

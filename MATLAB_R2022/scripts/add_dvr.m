@@ -1,9 +1,12 @@
-function add_dvr(mdl)
+function add_dvr(mdl, itag)
 % Inserts the DVR (averaged series voltage source with series impedance)
 % between the transformer and node 634 of a loaded model built from the
 % IEEE 13-bus base case, with its controller and logging, grouped into the
 % 'DVR' subsystem. Add it before the D-STATCOM.
+%   itag  label of the current through the DVR: 'Is634' (default) when any
+%         D-STATCOM is on its load side, 'I634' when one is on its supply side
 
+if nargin < 2, itag = 'Is634'; end
 here = fileparts(mfilename('fullpath'));
 libs = {'spsControlledVoltageSourceLib', 'spsThreePhaseSeriesRLCBranchLib'};
 for k = 1:numel(libs), load_system(libs{k}); end
@@ -44,7 +47,7 @@ chart.Script = fileread(fullfile(here, 'dvr_controller.m'));
 chart.ChartUpdate = 'DISCRETE';
 chart.SampleTime = '50e-6';
 
-tags = {'XFXFM1', 'V634', 'Is634'};    % supply voltage, load voltage, series current
+tags = {'XFXFM1', 'V634', itag};       % supply voltage, load voltage, series current
 for k = 1:3
     y = y0 - 15 + 30*(k-1);
     frm = sprintf('%s/DVR From %s', mdl, tags{k});
@@ -56,9 +59,10 @@ end
 add_block('simulink/Sources/Step', [mdl '/DVR Enable'], ...
     'Position', [x0-260 y0+85 x0-230 y0+105], ...
     'Time', '100', 'Before', '0', 'After', '1', 'SampleTime', '50e-6');
-% Gains: [KpV; KiV]
+% Gains, rating and strategy: [KpV; KiV; injection limit (pu); target in a
+% disturbance (pu); usable battery energy (kJ)]
 add_block('simulink/Sources/Constant', [mdl '/DVR Gains'], ...
-    'Position', [x0-300 y0+115 x0-230 y0+135], 'Value', '[0.2; 200]', ...
+    'Position', [x0-300 y0+115 x0-230 y0+135], 'Value', '[0.2; 200; 0.5; 1; 1e6]', ...
     'SampleTime', '50e-6');
 add_line(mdl, 'DVR Enable/1', 'DVR Controller/4', 'autorouting', 'on');
 add_line(mdl, 'DVR Gains/1', 'DVR Controller/5', 'autorouting', 'on');
@@ -91,6 +95,12 @@ add_block('simulink/Sinks/To Workspace', [mdl '/Log Vs634'], ...
     'Position', [2120 660 2200 684], 'VariableName', 'log_Vs634', ...
     'SaveFormat', 'Timeseries', 'MaxDataPoints', 'inf', 'SampleTime', '-1');
 add_line(mdl, 'Log From XFXFM1/1', 'Log Vs634/1');
+add_block('simulink/Signal Routing/From', [mdl '/Log From Idvr'], ...
+    'Position', [2000 780 2060 804], 'GotoTag', itag);
+add_block('simulink/Sinks/To Workspace', [mdl '/Log Idvr'], ...
+    'Position', [2120 780 2200 804], 'VariableName', 'log_Idvr', ...
+    'SaveFormat', 'Timeseries', 'MaxDataPoints', 'inf', 'SampleTime', '-1');
+add_line(mdl, 'Log From Idvr/1', 'Log Idvr/1');
 
 group_blocks(mdl, 'DVR', 'DVR');
 end

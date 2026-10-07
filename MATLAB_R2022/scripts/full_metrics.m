@@ -29,6 +29,18 @@ b = pq_analyse(vl, T.tFault, f0, vb);
 s = pq_analyse(vs, T.tFault, f0, vb);
 m.Vl_fault = b.pu; m.Vunb_fault = b.unb; m.Vs_fault = s.pu;
 
+% Rating each device actually uses: DVR injected voltage and apparent power
+% during the fault, D-STATCOM apparent power before it and its peak current
+vi = pq_analyse(out.get('log_Vinj'), T.tFault, f0, vb);
+id = pq_analyse(out.get('log_Idvr'), T.tFault, f0, 1);
+m.Vinj_max = max(vi.pu);
+m.Sdvr_kVA = sum(abs(vi.ph) .* abs(id.ph)) / 1e3;
+ic = out.get('log_Idst');
+r = pq_analyse(ic, T.tSteady, f0, 1);
+m.Sdst_kVA = sum(abs(a.ph) .* abs(r.ph)) / 1e3;
+x = squeeze(ic.Data);
+m.Idst_peak = max(abs(x(ic.Time >= T.tDev + 0.05, :)), [], 'all');
+
 % Load-voltage error from when the devices have settled to the end: mean
 % absolute deviation of the sliding one-cycle rms from 1 pu, percent
 t = vl.Time; x = squeeze(vl.Data) / vb;

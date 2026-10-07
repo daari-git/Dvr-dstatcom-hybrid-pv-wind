@@ -1,12 +1,13 @@
-function in = full_input(fph, gnd, T, gDst, gDvr)
-% Simulation input for one run of IEEE13_full.slx.
+function in = full_input(fph, gnd, T, gDst, gDvr, mdl)
+% Simulation input for one run of the combined model.
 %   fph   faulted phases, e.g. 'ABC', 'A', 'BC'
 %   gnd   'on' or 'off': fault involves ground
 %   T     timeline in seconds: tNL (rectifier on), tDev (DVR and D-STATCOM
 %         on), tOn and tOff (fault window), tStop
-%   gDst  D-STATCOM gains [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV]
-%   gDvr  DVR gains [KpV; KiV]
-mdl = 'IEEE13_full';
+%   gDst  D-STATCOM [current-loop bandwidth (Hz); KpDc; KiDc; KpV; KiV; Imax]
+%   gDvr  DVR [KpV; KiV; injection limit (pu)]
+%   mdl   model name, default 'IEEE13_full'
+if nargin < 6, mdl = 'IEEE13_full'; end
 oo = @(c) char(string(any(fph == c)).replace("true", "on").replace("false", "off"));
 in = Simulink.SimulationInput(mdl);
 in = in.setModelParameter('StopTime', num2str(T.tStop));

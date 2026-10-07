@@ -14,8 +14,9 @@ which R2022a and R2022b can open, together with everything needed to run them.
 | `IEEE13_dvr.slx` | Step 5: DVR |
 | `IEEE13_dg.slx` | Step 6: PV and wind plants |
 | `IEEE13_full.slx` | Step 7: DVR, D-STATCOM, PV and wind together |
+| `IEEE13_full_supply.slx` | Step 7: the same with the D-STATCOM on the supply side of the DVR |
 | `scripts/` | The same scripts as the main folder |
-| `results/optim_*_best.csv` | Optimised gains, read by `run_full` |
+| `results/` | Saved tables and figures, shown by `show_results` and `compare_models` |
 
 ## How to run
 
@@ -29,18 +30,29 @@ Use this folder on its own. Do not mix it with the R2024b models.
    addpath('scripts')
    ```
 
-3. Run any step. Graphs and tables are written to `results/` in this folder.
+3. To show the results, two commands are enough:
+
+   ```matlab
+   show_results       % everything from steps 3 to 6: tables and figures
+   compare_models     % all model configurations side by side
+   ```
+
+   Both show the saved results at once. To simulate live instead, use
+   `show_results('run')` (about 10 minutes) or `compare_models('run')` (about
+   3 minutes).
+
+4. To run one step on its own (graphs and tables are written to `results/`):
 
    ```matlab
    run_basecase     % step 3, about 3 minutes
    run_dstatcom     % step 4
    run_dvr          % step 5
    run_dg           % step 6
-   run_full         % step 7, 12 simulations
+   run_full         % step 7, several simulations
    ```
 
-The `run_...` commands are all that is needed. The `build_...` commands
-recreate a model from the benchmark feeder; use them only to change a model.
+Use these commands only. The `build_...` commands recreate a model from the
+benchmark feeder, and some of the code they use is still being developed.
 
 ## Requirements
 
@@ -52,9 +64,9 @@ recreate a model from the benchmark feeder; use them only to change a model.
 
 ## What has and has not been checked
 
-The models were exported from R2024b with Simulink's own export function, and
-the exported files give exactly the same results as the originals when run in
-R2024b. They have not been run in R2022 itself, because that release is not
+The models were exported from R2024b with Simulink's own export function.
+`show_results` and `compare_models`, including the live `'run'` mode, were
+tested from this folder in R2024b. They have not been run in R2022 itself, because that release is not
 installed on the machine that made them. If something fails in R2022, the
 exact error message is what is needed to fix it.
 

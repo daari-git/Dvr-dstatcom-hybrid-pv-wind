@@ -75,7 +75,7 @@ add_line(mdl, pnr.LConn(1), pgnd.LConn(1), 'autorouting', 'on');
 %% Controller and its inputs
 ctl = blk('Controller');
 add_block('simulink/User-Defined Functions/MATLAB Function', ctl, ...
-    'Position', [x0-150 y0-20 x0+10 y0+130]);
+    'Position', [x0-150 y0-20 x0+10 y0+160]);
 chart = find(sfroot, '-isa', 'Stateflow.EMChart', 'Path', ctl);
 chart.Script = code;
 chart.ChartUpdate = 'DISCRETE';
@@ -105,8 +105,11 @@ add_block('simulink/Sources/Step', blk('Enable'), ...
 add_block('simulink/Sources/Constant', blk('Kind'), ...
     'Position', [x0-260 y0+115 x0-230 y0+135], 'Value', num2str(kind), ...
     'SampleTime', '50e-6');
+add_block('simulink/Sources/Constant', blk('Support'), ...
+    'Position', [x0-260 y0+145 x0-230 y0+165], 'Value', '0', 'SampleTime', '50e-6');
 add_line(mdl, [name ' Enable/1'], [cn '/4'], 'autorouting', 'on');
 add_line(mdl, [name ' Kind/1'], [cn '/5'], 'autorouting', 'on');
+add_line(mdl, [name ' Support/1'], [cn '/6'], 'autorouting', 'on');
 
 % One-sample delay breaks the algebraic loop between network and controller
 add_block('simulink/Discrete/Unit Delay', blk('Delay'), ...

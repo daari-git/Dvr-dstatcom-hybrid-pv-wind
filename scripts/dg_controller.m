@@ -1,4 +1,4 @@
-function [vinv, dbg] = dg_controller(vpcc, ig, res, en, kind)
+function [vinv, dbg] = dg_controller(vpcc, ig, res, en, kind, sup)
 % Averaged model and control of an inverter-interfaced DG plant.
 % The text of this file is copied into the MATLAB Function blocks of the
 % PV and wind plants by add_dg.
@@ -8,6 +8,10 @@ function [vinv, dbg] = dg_controller(vpcc, ig, res, en, kind)
 %   res   resource: irradiance in W/m^2 (PV) or wind speed in m/s (wind)
 %   en    1 = plant connected, 0 = track the grid voltage (no current)
 %   kind  1 = PV plant, 400 kW at 480 V; 2 = wind plant, 500 kW at 4.16 kV
+%   sup   0 = unity power factor, stop injecting below 0.5 pu voltage
+%         1 = grid support: stay connected and inject reactive current in
+%             a sag, 2 pu of current per pu of voltage drop, ahead of active
+%             current
 %
 %   vinv  inverter voltage command for the averaged converter (V)
 %   dbg   [Pin_kW; P_kW; Q_kvar; Vdc; id; Vpu; aux; ceased]
@@ -18,8 +22,8 @@ function [vinv, dbg] = dg_controller(vpcc, ig, res, en, kind)
 %   wind  full-converter turbine: Cp(lambda) aerodynamics, one-mass rotor,
 %         optimal-torque MPPT, ideal power limit at rated, DC chopper
 % Grid side (both)
-%   PLL, DC-link voltage PI, current PI loops, unity power factor,
-%   current limit at 1.1 pu, momentary cessation below 0.5 pu voltage.
+%   PLL, DC-link voltage PI, current PI loops, current limit at 1.1 pu,
+%   and the low-voltage behaviour selected by sup.
 % There is no switching; the DC link is its power balance.
 %#codegen
 
@@ -97,12 +101,21 @@ else
         pin = ramp*pGen;
     end
 
-    % Momentary cessation below 0.5 pu, resume above 0.6 pu
-    if vpu < 0.5
+    % Momentary cessation below 0.5 pu, resume above 0.6 pu; not in support mode
+    if sup > 0.5
+        ceased = 0;
+    elseif vpu < 0.5
         ceased = 1;
     elseif vpu > 0.6
         ceased = 0;
     end
+
+    % Reactive support current (negative q injects reactive power)
+    iqRef = 0;
+    if sup > 0.5 && vpu < 0.9
+        iqRef = -min(2*(1 - vpu), 1) * Imax/1.1;
+    end
+    idMax = sqrt(max(Imax^2 - iqRef^2, 0));
 
     % Perturb-and-observe MPPT every two cycles, frozen in abnormal voltage
     if kind < 1.5 && ramp >= 1 && vpu > 0.88
@@ -115,16 +128,16 @@ else
         end
     end
 
-    % DC-link voltage PI gives the active current; unity power factor
+    % DC-link voltage PI gives the active current, within what is left of
+    % the current limit
     if ceased > 0.5
         idRef = 0;
     else
         eDc = vdc - vdcRef;
         u = KpDc*eDc + xDc;
-        idRef = min(max(u, 0), Imax);
+        idRef = min(max(u, 0), idMax);
         if u == idRef, xDc = xDc + KiDc*eDc*Ts; end
     end
-    iqRef = 0;
 
     % Current PI loops with voltage feed-forward and cross-coupling terms
     eD = idRef - id; eQ = iqRef - iq;

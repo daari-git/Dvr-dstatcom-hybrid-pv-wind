@@ -1,7 +1,7 @@
 function T = run_full()
 % Runs the four fault scenarios on IEEE13_full.slx (DVR, D-STATCOM, PV and
 % wind together) with the hand-tuned gains and with each set of gains found
-% by optimise_gains ('pso', 'gwo'). Writes results/full_summary.csv and one
+% by optimise_gains (pso, gwo, ba, woa, de). Writes results/full_summary.csv and one
 % figure per fault, drawn for the gain set with the lowest mean cost.
 % Run build_basecase and build_full first.
 
@@ -13,13 +13,13 @@ tl = struct('tNL', 0.3, 'tDev', 0.4, 'tOn', 0.8, 'tOff', 1.0, 'tStop', 1.2, ...
     'tSteady', 0.7, 'tFault', 0.9);
 scen = {'fault_LLLG', 'ABC', 'on'; 'fault_LG_A', 'A', 'on'; ...
         'fault_LL_BC', 'BC', 'off'; 'fault_LLG_BC', 'BC', 'on'};
-sets = {'hand_tuned', [1500; 1; 15; 5; 500], [0.2; 200]};
-meth = {'pso', 'gwo'};
+sets = {'hand_tuned', [1500; 1; 15; 5; 500; 850], [0.2; 200; 0.5]};
+meth = {'pso', 'gwo', 'ba', 'woa', 'de'};
 for k = 1:numel(meth)
     f = fullfile(outd, sprintf('optim_%s_best.csv', meth{k}));
     if exist(f, 'file')
         x = readmatrix(f);
-        sets(end+1, :) = {meth{k}, [x(1); x(2); x(3); 5; 500], [x(4); x(5)]}; %#ok<AGROW>
+        sets(end+1, :) = {meth{k}, [x(1); x(2); x(3); 5; 500; 850], [x(4); x(5); 0.5]}; %#ok<AGROW>
     end
 end
 

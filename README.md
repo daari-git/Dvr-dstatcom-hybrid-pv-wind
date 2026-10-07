@@ -61,7 +61,7 @@ flowchart TD
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
 | 7 | Combined model and offline optimisation | Device location, rating and PI gains | In progress: combined model built; PSO and grey wolf results below; a five-method comparison (PSO, grey wolf, bat, whale, differential evolution, three seeds each) and the placement and rating study are running |
-| 8 | Dataset generation | Labelled disturbance cases from scripted runs | To do |
+| 8 | Dataset generation | Labelled disturbance cases from scripted runs | Started: code for the coordination strategies, relay-timed faults and the dataset generator is written but not yet tested |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
 | 11 | Writing | Thesis and paper | To do |
@@ -82,20 +82,29 @@ flowchart TD
 - Low-voltage ride-through compliance (IEEE 1547-2018)
 - ML accuracy and inference time (target: within a quarter to half cycle)
 
-## Live demonstration
+## Showing the results: two commands
 
-To show the models running, in MATLAB from the repository root:
+For a presentation there are two commands. In MATLAB, from the repository root
+(or from the `MATLAB_R2022` folder in MATLAB R2022):
 
 ```matlab
 addpath('scripts')
-demo                    % single line-to-ground fault, without and with the DVR
-demo('LLLG')            % three-phase-to-ground fault
-demo('LG', 'full')      % with the DVR, D-STATCOM, PV and wind together
+show_results       % everything from steps 3 to 6
+compare_models     % all model configurations side by side
 ```
 
-Each call simulates the fault without and with compensation (one to two
-minutes), opens a figure with the load voltage before and after and the
-voltage the DVR injects, and prints the per-unit load voltages.
+| Command | What it does | Time |
+|---|---|---|
+| `show_results` | Prints the main table of each step and opens one window with a tab per figure | Immediate |
+| `show_results('run')` | Simulates steps 3 to 6 again first, then shows the new results | About 10 minutes |
+| `compare_models` | Table and bar chart of the load voltage during a fault for five configurations: no compensation, PV and wind only, D-STATCOM only, DVR only, all together | Immediate |
+| `compare_models('run')` | Simulates one three-phase fault on all five models and also plots the voltage against time | About 3 minutes |
+
+Without `'run'`, both use the saved results in `results/`.
+
+A third command, `demo`, simulates a single fault without and with the DVR and
+plots the waveforms (one to two minutes): `demo`, `demo('LLLG')`,
+`demo('LG', 'full')`.
 
 ## Simulink models
 
@@ -433,6 +442,8 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `MATLAB_R2022/` | The models in R2022a format with the scripts, for MATLAB R2022a or R2022b |
 | `scripts/export_r2022.m` | Refreshes the `MATLAB_R2022` folder |
 | `docs/` | Pictures of the Simulink models shown in this README |
+| `scripts/show_results.m` | Shows every result of steps 3 to 6: tables and one window of figures |
+| `scripts/compare_models.m` | Compares the five model configurations under the same fault |
 | `scripts/demo.m` | Live demonstration: one fault without and with compensation, shown in a figure |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |

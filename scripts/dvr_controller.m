@@ -8,13 +8,16 @@ function [vinj, dbg] = dvr_controller(vs, vl, il, en, g)
 %   vl    load-side phase-to-ground voltage (V)
 %   il    current through the DVR (A)
 %   en    1 = controller active, 0 = inject nothing
-%   g     [KpV; KiV; injection limit (pu)]; hand-tuned baseline [0.2; 200; 0.5]
+%   g     [KpV; KiV; injection limit (pu); load-voltage target during a
+%         disturbance (pu); usable battery energy (kJ)]
+%         baseline [0.2; 200; 0.5; 1; 1e6]: full restoration, unlimited energy
 %
 %   vinj  series voltage command for the averaged converter (V)
-%   dbg   [Pinj; Einj; trimD; trimQ; vLd; vLq; theta; f]
+%   dbg   [Pinj; Einj; trimD; trimQ; vLd; vLq; battery left (0 to 1);
+%         flags: 1 = disturbance detected, 2 = battery empty, 3 = both]
 %
-% The converter is an averaged model: no switching, and the energy storage
-% is ideal. Pinj and Einj are the power and energy it has to supply.
+% The converter is an averaged model with no switching. The battery is an
+% energy store: when it is empty the DVR stops injecting.
 %#codegen
 
 Ts = 50e-6; w0 = 2*pi*60;
@@ -23,12 +26,14 @@ Vmax = g(3)*Vref;                         % injection limit per phase
 N = 333;                                  % samples in one fundamental cycle
 
 KpV = g(1);  KiV = g(2);                  % load-voltage loops
+Ecap = g(5)*1e3;                          % usable battery energy, J
 KpPll = 44;  KiPll = 987;                 % PLL, 5 Hz bandwidth
 
-persistent theta xPll xD xQ buf bsum idx E
+persistent theta xPll xD xQ buf bsum idx E Eb hold empty
 if isempty(theta)
     theta = atan2((vs(2) - vs(3))/sqrt(3), (2*vs(1) - vs(2) - vs(3))/3);
     xPll = 0; xD = 0; xQ = 0; E = 0;
+    Eb = Ecap; hold = 0; empty = 0;
     buf = zeros(N, 1); bsum = 0; idx = 1;
 end
 
@@ -43,18 +48,29 @@ w = w0 + KpPll*ePll + xPll;
 
 [vld, vlq] = abc2dq(vl, theta);
 
-if en < 0.5
+% Disturbance detection: the supply vector leaves its nominal position by
+% more than 0.1 pu. It is held for one cycle so that the ripple of an
+% unbalanced fault does not release it.
+if hypot(vsd - Vref, vsq) > 0.1*Vref
+    hold = N;
+elseif hold > 0
+    hold = hold - 1;
+end
+Vtgt = Vref;
+if hold > 0, Vtgt = g(4)*Vref; end
+
+if en < 0.5 || empty > 0.5
     vinj = zeros(3, 1);
     xD = 0; xQ = 0; trimD = 0; trimQ = 0;
 else
-    eD = Vref - vld; eQ = -vlq;
+    eD = Vtgt - vld; eQ = -vlq;
     trimD = KpV*eD + xD;
     trimQ = KpV*eQ + xQ;
 
     % The output reaches the network one sample later: advance the angle.
     % The zero-sequence part of the supply voltage is removed directly.
     v0 = (vs(1) + vs(2) + vs(3)) / 3;
-    u = dq2abc(Vref - vsd + trimD, -vsq + trimQ, theta + 1.5*w*Ts) - v0;
+    u = dq2abc(Vtgt - vsd + trimD, -vsq + trimQ, theta + 1.5*w*Ts) - v0;
     vinj = min(max(u, -Vmax), Vmax);
     if all(abs(u) <= Vmax)
         xD = xD + KiV*eD*Ts; xQ = xQ + KiV*eQ*Ts;
@@ -63,7 +79,9 @@ end
 
 p = vinj' * il;
 E = E + p*Ts;
-dbg = [p; E; trimD; trimQ; vld; vlq; theta; w/(2*pi)];
+Eb = min(Eb - p*Ts, Ecap);
+if Eb <= 0, empty = 1; end
+dbg = [p; E; trimD; trimQ; vld; vlq; max(Eb, 0)/Ecap; (hold > 0) + 2*empty];
 
 xPll = xPll + KiPll*ePll*Ts;
 theta = mod(theta + w*Ts, 2*pi);
