@@ -14,6 +14,7 @@ which R2022a and R2022b can open, together with everything needed to run them.
 | `IEEE13_dvr.slx` | Step 5: DVR |
 | `IEEE13_dg.slx` | Step 6: PV and wind plants |
 | `IEEE13_full.slx` | Step 7: DVR, D-STATCOM, PV and wind together |
+| `IEEE13_demo.slx` | The combined model with scopes and a fault set up, for a live run |
 | `IEEE13_full_supply.slx` | Step 7: the same with the D-STATCOM on the supply side of the DVR |
 | `scripts/` | The same scripts as the main folder |
 | `results/` | Saved tables and figures, shown by `show_results` and `compare_models` |
@@ -41,7 +42,13 @@ Use this folder on its own. Do not mix it with the R2024b models.
    `show_results('run')` (about 10 minutes) or `compare_models('run')` (about
    3 minutes).
 
-4. To run one step on its own (graphs and tables are written to `results/`):
+4. To run live in Simulink, open `IEEE13_demo.slx` and press **Run**. Three
+   scope windows open and fill in as it runs (under a minute): RMS voltages,
+   voltage waveforms and currents. A single line-to-ground fault is applied
+   from 0.6 s to 0.8 s; the supply sags and swells while the load stays at
+   1.0 pu.
+
+5. To run one step on its own (graphs and tables are written to `results/`):
 
    ```matlab
    run_basecase     % step 3, about 3 minutes

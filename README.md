@@ -106,6 +106,30 @@ A third command, `demo`, simulates a single fault without and with the DVR and
 plots the waveforms (one to two minutes): `demo`, `demo('LLLG')`,
 `demo('LG', 'full')`.
 
+## Running live in Simulink
+
+`IEEE13_demo.slx` is the combined model prepared for a live run. Open it and
+press **Run**; nothing needs to be set first.
+
+```matlab
+open_system('IEEE13_demo')
+```
+
+Three scope windows open and fill in as the simulation runs (about 45 seconds
+for 1 second of simulated time):
+
+| Scope | Shows |
+|---|---|
+| RMS voltages | Supply and load RMS voltage per phase. The supply shows the sag on phase A and the swell on phases B and C; the load stays at 1.0 pu |
+| Voltages | Supply voltage, voltage injected by the DVR, and load voltage waveforms |
+| Currents | Source current, load current and D-STATCOM current |
+
+Timeline: PV and wind connect at 0.2 s, the rectifier load at 0.3 s, the DVR
+and D-STATCOM at 0.4 s, and a single line-to-ground fault is applied at node
+680 from 0.6 s to 0.8 s. The waveform scopes show 0.5 s at a time, so the
+fault fills their second screen. To try another fault, double-click the
+`Fault 680` block and tick the phases to fault.
+
 ## Simulink models
 
 The benchmark feeder, as supplied by its authors (`IEEE13bus_v2019b_Discrete.slx`):
@@ -444,6 +468,8 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `docs/` | Pictures of the Simulink models shown in this README |
 | `scripts/show_results.m` | Shows every result of steps 3 to 6: tables and one window of figures |
 | `scripts/compare_models.m` | Compares the five model configurations under the same fault |
+| `IEEE13_demo.slx` | The combined model with scopes and a fault already set up, for a live run in Simulink |
+| `scripts/build_demo.m` | Builds `IEEE13_demo.slx` from `IEEE13_full.slx` |
 | `scripts/demo.m` | Live demonstration: one fault without and with compensation, shown in a figure |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |

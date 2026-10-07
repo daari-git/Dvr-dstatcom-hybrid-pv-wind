@@ -9,7 +9,7 @@ dst = fullfile(root, 'MATLAB_R2022');
 if ~exist(fullfile(dst, 'results'), 'dir'), mkdir(fullfile(dst, 'results')); end
 
 models = {'IEEE13_basecase', 'IEEE13_dstatcom', 'IEEE13_dvr', 'IEEE13_dg', 'IEEE13_full', ...
-    'IEEE13_full_supply'};
+    'IEEE13_full_supply', 'IEEE13_demo'};
 for k = 1:numel(models)
     m = models{k};
     if bdIsLoaded(m), close_system(m, 0); end
