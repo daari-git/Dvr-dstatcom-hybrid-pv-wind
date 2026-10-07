@@ -82,6 +82,21 @@ flowchart TD
 - Low-voltage ride-through compliance (IEEE 1547-2018)
 - ML accuracy and inference time (target: within a quarter to half cycle)
 
+## Live demonstration
+
+To show the models running, in MATLAB from the repository root:
+
+```matlab
+addpath('scripts')
+demo                    % single line-to-ground fault, without and with the DVR
+demo('LLLG')            % three-phase-to-ground fault
+demo('LG', 'full')      % with the DVR, D-STATCOM, PV and wind together
+```
+
+Each call simulates the fault without and with compensation (one to two
+minutes), opens a figure with the load voltage before and after and the
+voltage the DVR injects, and prints the per-unit load voltages.
+
 ## Simulink models
 
 The benchmark feeder, as supplied by its authors (`IEEE13bus_v2019b_Discrete.slx`):
@@ -418,6 +433,7 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `MATLAB_R2022/` | The models in R2022a format with the scripts, for MATLAB R2022a or R2022b |
 | `scripts/export_r2022.m` | Refreshes the `MATLAB_R2022` folder |
 | `docs/` | Pictures of the Simulink models shown in this README |
+| `scripts/demo.m` | Live demonstration: one fault without and with compensation, shown in a figure |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 
