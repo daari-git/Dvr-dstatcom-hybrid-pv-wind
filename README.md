@@ -142,10 +142,20 @@ The combined model (`IEEE13_full.slx`): the feeder with the fault block at node
 
 ![Combined model](docs/model_full.png)
 
+The DVR model (`IEEE13_dvr.slx`): the DVR sits in series between the
+transformer and node 634.
+
+![DVR model](docs/model_dvr_top.png)
+
 Inside the `DVR` subsystem: the controller, three series voltage sources and
 the series impedance.
 
 ![DVR subsystem](docs/model_dvr.png)
+
+The D-STATCOM model (`IEEE13_dstatcom.slx`): the D-STATCOM connects in
+shunt at node 634.
+
+![D-STATCOM model](docs/model_dstatcom_top.png)
 
 Inside the `D-STATCOM` subsystem: the controller, three voltage sources, the
 coupling filter, the current measurement and the breaker.
@@ -159,9 +169,11 @@ structure with a wind-speed profile in place of irradiance.
 
 ![Wind plant subsystem](docs/model_wind_plant.png)
 
-The blocks are placed by the build scripts, so some labels and wires overlap.
-The models are meant to be opened in Simulink, where each block can be
-inspected.
+The DVR and D-STATCOM models were arranged by hand. Running `build_dvr` or
+`build_dstatcom` recreates them from the base case and loses that
+arrangement, so use the `run_...` commands unless the device design changes.
+The combined model and the PV and wind subsystems are still placed by the
+build scripts, so some labels and wires overlap there.
 
 ## Base-case results (no compensation)
 
