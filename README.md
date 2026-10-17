@@ -172,8 +172,10 @@ structure with a wind-speed profile in place of irradiance.
 The DVR and D-STATCOM models were arranged by hand. Running `build_dvr` or
 `build_dstatcom` recreates them from the base case and loses that
 arrangement, so use the `run_...` commands unless the device design changes.
-The combined model and the PV and wind subsystems are still placed by the
-build scripts, so some labels and wires overlap there.
+The PV and wind subsystems in `IEEE13_dg.slx` were arranged with Simulink's
+automatic layout (Arrange System), which is where the two pictures above come
+from. The combined model is still placed by the build scripts, so some labels
+and wires overlap there.
 
 ## Base-case results (no compensation)
 
