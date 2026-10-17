@@ -61,7 +61,7 @@ flowchart TD
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
 | 7 | Combined model and offline optimisation | Device location, rating and PI gains | In progress: combined model built; PSO and grey wolf results below; a five-method comparison (PSO, grey wolf, bat, whale, differential evolution, three seeds each) and the placement and rating study are running |
-| 8 | Dataset generation | Labelled disturbance cases from scripted runs | Started: code for the coordination strategies, relay-timed faults and the dataset generator is written but not yet tested |
+| 8 | Dataset generation | Labelled disturbance cases from scripted runs | In progress: strategies and relay-timed faults built and checked; dataset of 400 scenarios being generated |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
 | 11 | Writing | Thesis and paper | To do |
@@ -362,7 +362,7 @@ the hand-tuned PI gains.
 
 ![Combined model, single line-to-ground fault](results/full_fault_LG_A.png)
 
-(The figure is drawn with the grey wolf gains, the set with the lowest mean cost.)
+(The figure is drawn with the particle swarm gains, the set with the lowest mean cost.)
 
 ## Optimisation of the PI gains
 
@@ -415,6 +415,21 @@ Best gains found by each method, over its three seeds:
 | DVR load-voltage Kp | 0.2 | 0.90 | 0.90 | 0.90 | 0.90 | 0.90 | 0 to 0.9 |
 | DVR load-voltage Ki | 200 | 20 | 319 | 242 | 290 | 529 | 20 to 2000 |
 
+Each method's best gains were then tested on all four fault types (fault
+from 0.8 s to 1.0 s, all devices on):
+
+| Gain set | Cost: LLLG / LG / LL / LLG | Mean cost | Load voltage THD (%) | Negative-sequence current (% of rating) | DC-link deviation (%) |
+|---|---|---|---|---|---|
+| Hand-tuned | 8.59 / 8.60 / 9.11 / 8.83 | 8.783 | 3.55 | 0.74 | 1.4 |
+| Particle swarm | 8.05 / 8.13 / 8.32 / 8.09 | **8.148** | 2.90 | 0.63 | 1.8 |
+| Grey wolf | 8.06 / 8.17 / 8.38 / 8.13 | 8.183 | 2.88 | 0.71 | 1.4 |
+| Bat | 8.08 / 8.19 / 8.40 / 8.15 | 8.204 | 2.92 | 0.69 | 1.6 |
+| Whale | 8.10 / 8.21 / 8.42 / 8.17 | 8.226 | 2.93 | 0.68 | 1.5 |
+| Differential evolution | 8.11 / 8.22 / 8.42 / 8.17 | 8.230 | 2.87 | 0.72 | 1.6 |
+
+The ranking holds on faults the optimisers never saw: particle swarm's gains
+are best on every fault type, 7 % below the hand-tuned gains on average.
+
 All five agree on a current-loop bandwidth of about 1550 to 1650 Hz and a
 higher DC-link proportional gain than the hand-tuned one, and all push the
 DVR proportional gain to the top of its range. They disagree on the DVR
@@ -431,6 +446,52 @@ Toolbox, and the Global Optimization Toolbox for PSO):
 addpath('scripts'); build_basecase; build_full;
 compare_optimisers(1:3); run_full;
 ```
+
+## Step 8: coordination strategies (first check)
+
+The supervisor in steps 8 to 10 will choose between four coordination
+strategies when a fault starts:
+
+| Strategy | DVR during the disturbance | PV and wind plants |
+|---|---|---|
+| 1 | Full restoration to 1.0 pu | Unity power factor; stop injecting below 0.5 pu |
+| 2 | Economy restoration to 0.9 pu | Unity power factor; stop injecting below 0.5 pu |
+| 3 | Full restoration to 1.0 pu | Stay connected and inject reactive current |
+| 4 | Economy restoration to 0.9 pu | Stay connected and inject reactive current |
+
+The model for this, `IEEE13_coord.slx`, adds to the combined model a finite
+DVR battery (4 to 20 kJ usable), faults at three locations (nodes 680, 675 and
+632) with resistance from 0.01 to 5 ohm, and an inverse-time overcurrent relay
+at the substation that clears each fault. A larger fault current is cleared
+sooner, so the fault duration is tied to the fault itself.
+
+Each strategy is scored by a cost that grows quickly when the load voltage
+leaves the 0.9 to 1.1 pu band, plus smaller terms for the voltage at node 675
+and the PV and wind energy lost (`scripts/coord_metrics.m`).
+
+A first check on 12 random scenarios shows that **the best strategy changes
+from one scenario to another**, so a fixed rule is not enough and a
+supervisor has something to decide:
+
+| Best strategy | Scenarios | When it won in this check |
+|---|---|---|
+| 1 Full restoration | 5 | The battery lasts the whole fault, mostly single-phase faults |
+| 3 Full restoration + plant support | 3 | Three-phase and phase-to-phase faults with enough battery |
+| 4 Economy restoration + plant support | 4 | The battery would run out under full restoration |
+| 2 Economy restoration | 0 | |
+
+- **The battery decision matters most.** When full restoration empties the
+  battery before the relay clears the fault, the load falls back into the
+  sag; economy restoration lasts longer and lowers the cost by up to 35 %.
+- **Plant support matters less.** It changes the cost by a few percent, and
+  in single-phase faults it slightly raises the swell on the healthy phases,
+  which is why strategy 1 beats strategy 3 there.
+- **The DVR now saturates.** Faults at node 632 can sag the supply to 0.11 pu,
+  beyond the DVR's 0.5 pu injection limit, so the load is not fully restored.
+- The relay cleared the faults in 0.11 s to 0.19 s.
+
+Full results are in `results/strategy_check.csv`. The dataset of 400 scenarios
+(1,600 simulations) for training the supervisor is being generated.
 
 ## Contents
 
@@ -464,6 +525,9 @@ compare_optimisers(1:3); run_full;
 | `MATLAB_R2022/` | The models in R2022a format with the scripts, for MATLAB R2022a or R2022b |
 | `scripts/export_r2022.m` | Refreshes the `MATLAB_R2022` folder |
 | `docs/` | Pictures of the Simulink models shown in this README |
+| `IEEE13_coord.slx` | Combined model with the DVR battery, relay-timed faults at three locations and the coordination strategies (step 8) |
+| `scripts/build_coord.m`, `scripts/add_relay.m`, `scripts/fault_relay.m` | Build the step 8 model and its relay |
+| `scripts/coord_*.m`, `scripts/check_strategies.m`, `scripts/generate_dataset.m` | Step 8 scenarios, strategies, outcome and features, check and dataset |
 | `scripts/show_results.m` | Shows every result of steps 3 to 6: tables and one window of figures |
 | `scripts/compare_models.m` | Compares the five model configurations under the same fault |
 | `IEEE13_demo.slx` | The combined model with scopes and a fault already set up, for a live run in Simulink |

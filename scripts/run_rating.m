@@ -46,15 +46,15 @@ out = cell(1, numel(in));
 out(~sup) = num2cell(parsim(in(~sup), 'ShowProgress', 'off', 'SetupFcn', setup));
 out(sup)  = num2cell(parsim(in(sup),  'ShowProgress', 'off', 'SetupFcn', setup));
 m = cellfun(@(o) full_metrics(o, tl), out);
+save(fullfile(outd, 'rating_raw.mat'), 'm', 'tag');   % metrics of every run
 
 %% Placement
 k = find(strcmp(tag(:, 1), 'placement'))';
-P = table(tag(k, 2), tag(k, 3), [m(k).Vl_fault]', [m(k).eV]', [m(k).THDv]', [m(k).TDD]', ...
+P = table(tag(k, 2), tag(k, 3), reshape([m(k).Vl_fault], 3, [])', [m(k).eV]', [m(k).THDv]', [m(k).TDD]', ...
     [m(k).I2]', [m(k).PF]', [m(k).Pdvr_kW]', [m(k).Sdvr_kVA]', [m(k).Vinj_max]', ...
     [m(k).Sdst_kVA]', [m(k).J]', 'VariableNames', {'dstatcom', 'scenario', 'Vl_fault_abc_pu', ...
     'Vl_error_pct', 'THDv_max_pct', 'TDD_pct', 'I2_pct_of_rated', 'PF', 'Pdvr_kW', ...
     'Sdvr_kVA', 'Vinj_max_pu', 'Sdst_kVA', 'cost'});
-P.Vl_fault_abc_pu = reshape([m(k).Vl_fault], 3, [])';
 writetable(P, fullfile(outd, 'placement_summary.csv')); disp(P);
 
 %% DVR injection limit
