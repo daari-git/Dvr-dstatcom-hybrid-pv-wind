@@ -60,7 +60,7 @@ flowchart TD
 | 4 | D-STATCOM alone with PI control | Voltage regulation, THD, reactive power | Done |
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
-| 7 | Combined model and offline optimisation | Device location, rating and PI gains | In progress: combined model built; PSO and grey wolf results below; a five-method comparison (PSO, grey wolf, bat, whale, differential evolution, three seeds each) and the placement and rating study are running |
+| 7 | Combined model and offline optimisation | Device placement, rating and PI gains | Done: five optimisers compared over three seeds (particle swarm best); D-STATCOM placement and both ratings studied; feeder location not varied |
 | 8 | Dataset generation | Labelled disturbance cases from scripted runs | In progress: strategies and relay-timed faults built and checked; dataset of 400 scenarios being generated |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
@@ -447,6 +447,63 @@ addpath('scripts'); build_basecase; build_full;
 compare_optimisers(1:3); run_full;
 ```
 
+## Placement and rating
+
+The placement and rating study runs the combined model with the hand-tuned
+gains (`scripts/run_rating.m`).
+
+**Placement of the D-STATCOM relative to the DVR.** On the load side (the
+default, `IEEE13_full.slx`) it compensates the load before its current reaches
+the DVR. On the supply side (`IEEE13_full_supply.slx`) the DVR carries the
+uncompensated load current.
+
+| Fault | Cost, load side | Cost, supply side | DVR apparent power, load side (kVA) | DVR apparent power, supply side (kVA) |
+|---|---|---|---|---|
+| Three-phase-to-ground | 8.59 | 8.41 | 45 | 129 |
+| Single line-to-ground (A) | 8.60 | 7.29 | 33 | 85 |
+| Line-to-line (B-C) | 9.11 | 8.22 | 24 | 71 |
+| Double line-to-ground (B-C) | 8.83 | 8.02 | 33 | 91 |
+
+The supply-side placement gives slightly better power quality on every fault
+(load voltage THD 2.5 % against 3.5 %), but the DVR then needs about three
+times the apparent power rating, because it carries the load's reactive and
+unbalanced current as well. The load-side placement is kept: a smaller DVR
+for a small loss of quality.
+
+**DVR injection limit**, lowest load phase voltage during each fault:
+
+| Injection limit (pu) | Three-phase | Single-phase | Phase-to-phase | Double-phase-to-ground |
+|---|---|---|---|---|
+| 0.2 | 0.86 | 0.86 | 0.92 | 0.87 |
+| 0.3 | 0.95 | 0.96 | 0.99 | 0.96 |
+| 0.4 | 1.00 | 1.00 | 0.99 | 1.00 |
+| 0.5 | 1.00 | 1.00 | 0.99 | 1.00 |
+
+![DVR rating](results/rating_dvr.png)
+
+A 0.3 pu limit keeps the load above 0.9 pu in every fault and 0.4 pu restores
+it fully; the largest injection used is 0.385 pu. The 0.5 pu assumed so far
+can be reduced to 0.4 pu. With the PV plant behind it, the DVR uses at most
+45 kVA.
+
+**D-STATCOM current limit**, with the unbalanced load and rectifier on:
+
+| Current limit (A peak) | Rating (kVA) | Power factor | Reactive power from source (kvar) | Negative-sequence current (% of rating) |
+|---|---|---|---|---|
+| 200 | 118 | 0.52 | 181 | 7.1 |
+| 400 | 235 | 0.87 | 65 | 5.2 |
+| 600 | 353 | 1.00 | 2 | 0.9 |
+| 850 | 500 | 1.00 | 0 | 0.7 |
+
+![D-STATCOM rating](results/rating_dstatcom.png)
+
+About 350 kVA is enough to bring the power factor to 1.00 and remove most of
+the unbalance; the 500 kVA assumed so far is about 40 % more than needed.
+
+Location on the feeder was not optimised: the DVR has to sit in series with
+the load it protects, and moving the D-STATCOM to a 4.16 kV node would need a
+different design. The placement studied is the D-STATCOM's side of the DVR.
+
 ## Step 8: coordination strategies (first check)
 
 The supervisor in steps 8 to 10 will choose between four coordination
@@ -513,6 +570,7 @@ Full results are in `results/strategy_check.csv`. The dataset of 400 scenarios
 | `IEEE13_full.slx` | Base-case model plus the DVR, the D-STATCOM, the PV plant and the wind plant |
 | `scripts/build_full.m`, `scripts/run_full.m` | Build the combined model; run its four faults with the hand-tuned, PSO and GWO gains |
 | `scripts/optimise_gains.m` | Optimisation of the PI gains: particle swarm, grey wolf, bat, whale or differential evolution |
+| `scripts/run_rating.m` | Placement and rating study of the DVR and D-STATCOM |
 | `scripts/compare_optimisers.m` | Runs all five optimisers over several seeds and ranks them |
 | `scripts/full_input.m`, `scripts/full_metrics.m` | One simulation setup of the combined model, and its performance measures and cost |
 | `scripts/add_dvr.m`, `scripts/add_dstatcom.m` | Add the DVR or the D-STATCOM to a model built from the base case |
