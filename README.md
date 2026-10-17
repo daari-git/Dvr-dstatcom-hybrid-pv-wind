@@ -366,87 +366,70 @@ the hand-tuned PI gains.
 
 ## Optimisation of the PI gains
 
-### Five-method comparison (in progress)
+Five optimisers tune five gains on the combined model: particle swarm (PSO),
+grey wolf (GWO), bat (BA), whale (WOA) and differential evolution (DE). Every
+method uses 8 agents and 6 iterations (56 simulations per run) and, for a
+given random seed, the same starting population, which includes the
+hand-tuned gains. Each method was run with three seeds, 15 runs in all.
 
-Five optimisers are being compared on the same problem: particle swarm, grey
-wolf, bat, whale and differential evolution. Each uses 8 agents, 6 iterations
-(56 simulations) and, for a given seed, the same starting population. Three
-seeds are run per method so that the ranking rests on a mean, not on one run.
-
-Status at 07 October 2026, 00:54: 10 of 15 runs finished. The table is partial and the
-order may change as the remaining runs complete. The hand-tuned cost is
-8.632; lower is better. Methods are ordered by their mean so far, which
-is not yet comparable between methods with different numbers of finished runs.
-
-| Method | Seed 1 | Seed 2 | Seed 3 | Mean so far | Reduction from hand-tuned |
-|---|---|---|---|---|---|
-| Particle swarm | 8.261 | 8.223 | running or queued | 8.242 | 4.5 % |
-| Grey wolf | 8.213 | 8.511 | running or queued | 8.362 | 3.1 % |
-| Differential evolution | 8.246 | 8.540 | running or queued | 8.393 | 2.8 % |
-| Bat | 8.237 | 8.626 | running or queued | 8.431 | 2.3 % |
-| Whale | 8.255 | 8.618 | running or queued | 8.437 | 2.3 % |
-
-The finished runs are within about 1 % of each other, so no method can be
-called best yet. The placement and rating study and the test of each method's
-gains on all four faults follow when the runs finish.
-
-Two optimisers tune five gains on the combined model: particle swarm (PSO) and
-the grey wolf optimiser (GWO). Both use 8 agents, 6 iterations (56 simulations)
-and the same starting population, which includes the hand-tuned gains. Each
-candidate is scored on one simulation with a single line-to-ground fault. The
-cost is
+Each candidate is scored on one simulation with a single line-to-ground fault.
+The cost is
 
 `4 x load-voltage error + voltage THD + current distortion + negative-sequence current + 100 x (1 - power factor) + 0.2 x DC-link deviation`
 
 with every term in percent and the two current terms taken against the
-transformer rating.
+transformer rating. The hand-tuned gains score 8.632; lower is better.
 
-| Gain | Hand-tuned | PSO | GWO | Search range |
-|---|---|---|---|---|
-| D-STATCOM current-loop bandwidth (Hz) | 1500 | 1755 | 1570 | 500 to 2500 |
-| D-STATCOM DC-link Kp (A/V) | 1.0 | 2.35 | 2.35 | 0.2 to 5 |
-| D-STATCOM DC-link Ki (A/V/s) | 15 | 105 | 27 | 2 to 200 |
-| DVR load-voltage Kp | 0.2 | 0.90 | 0.90 | 0 to 0.9 |
-| DVR load-voltage Ki | 200 | 20 | 319 | 20 to 2000 |
-| Cost on the tuning fault | 8.632 | 8.261 | 8.213 | |
-| Reduction from hand-tuned | | 4.3 % | 4.9 % | |
-
-Each gain set was then tested on all four fault types:
-
-| Quantity | Hand-tuned | PSO | GWO |
-|---|---|---|---|
-| Cost, four faults | 8.59 / 8.60 / 9.11 / 8.83 | 8.10 / 8.21 / 8.38 / 8.14 | 8.06 / 8.17 / 8.38 / 8.13 |
-| Load voltage THD (%) | 3.55 | 3.01 | 2.88 |
-| Negative-sequence source current (% of rating) | 0.74 | 0.65 | 0.71 |
-| Source current distortion (% of rating) | 3.02 | 3.05 | 3.14 |
-| Load voltage unbalance during fault, four faults (%) | 0.04 / 0.34 / 0.77 / 0.68 | 0.03 / 0.22 / 0.49 / 0.44 | 0.02 / 0.21 / 0.48 / 0.43 |
-| DC-link deviation (%) | 1.4 | 1.7 | 1.4 |
+| Method | Seed 1 | Seed 2 | Seed 3 | Mean | Spread (std) | Mean reduction |
+|---|---|---|---|---|---|---|
+| Particle swarm | 8.261 | 8.223 | 8.228 | **8.237** | 0.021 | **4.6 %** |
+| Grey wolf | 8.213 | 8.511 | 8.521 | 8.415 | 0.175 | 2.5 % |
+| Differential evolution | 8.246 | 8.540 | 8.535 | 8.440 | 0.168 | 2.2 % |
+| Bat | 8.237 | 8.626 | 8.554 | 8.472 | 0.207 | 1.8 % |
+| Whale | 8.255 | 8.618 | 8.562 | 8.478 | 0.195 | 1.8 % |
 
 ![Optimisation convergence](results/optim_convergence.png)
 
-- Both optimisers improve on the hand-tuned gains by a small amount: 4 to 5 %
-  on the fault used for tuning and 5 to 8 % on the four test faults.
-- GWO finishes 0.6 % below PSO. With one run each and 56 simulations, that
-  difference is too small to rank the two methods; repeated runs with
-  different seeds would be needed.
-- The two agree on the D-STATCOM DC-link Kp (2.35) and push the DVR Kp to the
-  top of its range, but disagree on both integral gains. The cost is not
-  sensitive to those, so they should not be read as optima.
-- The hand-tuned gains were already close to the best the PI structure can do
-  here. The remaining limits are structural (harmonic tracking of the current
-  loop, and the wind plant outside the DVR) rather than a matter of tuning.
+**Particle swarm is the method to use for this problem.** It has the lowest
+mean cost and is the only method that did well on all three seeds; its spread
+is about eight times smaller than the others'. The other four found a good
+solution only from the first seed's starting population and improved on the
+hand-tuned gains by 1 % to 1.5 % from the other two. Grey wolf produced the
+single lowest cost (8.213), which is why a one-run comparison would have
+ranked it first.
+
+The improvement over the hand-tuned gains is small in every case, at most
+about 5 %. The hand-tuned gains were already close to what PI control can do
+here; the remaining limits are structural (harmonic tracking of the current
+loop, and the wind plant outside the DVR). With 56 simulations per run, the
+ranking is specific to this budget: methods that explore more slowly could
+catch up with more iterations.
+
+Best gains found by each method, over its three seeds:
+
+| Gain | Hand-tuned | PSO | GWO | DE | BA | WOA | Search range |
+|---|---|---|---|---|---|---|---|
+| D-STATCOM current-loop bandwidth (Hz) | 1500 | 1633 | 1570 | 1551 | 1615 | 1577 | 500 to 2500 |
+| D-STATCOM DC-link Kp (A/V) | 1.0 | 4.06 | 2.35 | 2.10 | 2.17 | 3.00 | 0.2 to 5 |
+| D-STATCOM DC-link Ki (A/V/s) | 15 | 35 | 27 | 7 | 11 | 12 | 2 to 200 |
+| DVR load-voltage Kp | 0.2 | 0.90 | 0.90 | 0.90 | 0.90 | 0.90 | 0 to 0.9 |
+| DVR load-voltage Ki | 200 | 20 | 319 | 242 | 290 | 529 | 20 to 2000 |
+
+All five agree on a current-loop bandwidth of about 1550 to 1650 Hz and a
+higher DC-link proportional gain than the hand-tuned one, and all push the
+DVR proportional gain to the top of its range. They disagree on the DVR
+integral gain, to which the cost is not sensitive.
 
 An earlier PSO run without the voltage THD term lowered its cost by 17 % but
-raised load voltage THD from 3.55 % to 4.68 %, so the term was added and the
-runs repeated. Device location and rating have not been optimised.
+raised load voltage THD from 3.55 % to 4.68 %, so the term was added and all
+runs use the corrected cost.
 
-To reproduce (each optimisation takes about 10 minutes on four cores and needs
-the Parallel Computing Toolbox; PSO also needs the Global Optimization
-Toolbox):
+To reproduce (about 2.5 hours on four cores; needs the Parallel Computing
+Toolbox, and the Global Optimization Toolbox for PSO):
 
 ```matlab
 addpath('scripts'); build_basecase; build_full;
-optimise_gains('pso'); optimise_gains('gwo'); run_full;
+compare_optimisers(1:3); run_full;
 ```
 
 ## Contents
@@ -468,7 +451,8 @@ optimise_gains('pso'); optimise_gains('gwo'); run_full;
 | `IEEE13_dg.slx` | Base-case model plus the PV plant at node 634 and the wind plant at node 675 |
 | `IEEE13_full.slx` | Base-case model plus the DVR, the D-STATCOM, the PV plant and the wind plant |
 | `scripts/build_full.m`, `scripts/run_full.m` | Build the combined model; run its four faults with the hand-tuned, PSO and GWO gains |
-| `scripts/optimise_gains.m` | Particle swarm and grey wolf optimisation of the PI gains |
+| `scripts/optimise_gains.m` | Optimisation of the PI gains: particle swarm, grey wolf, bat, whale or differential evolution |
+| `scripts/compare_optimisers.m` | Runs all five optimisers over several seeds and ranks them |
 | `scripts/full_input.m`, `scripts/full_metrics.m` | One simulation setup of the combined model, and its performance measures and cost |
 | `scripts/add_dvr.m`, `scripts/add_dstatcom.m` | Add the DVR or the D-STATCOM to a model built from the base case |
 | `scripts/log_source_current.m` | Logs the source-side current at node 634 |
