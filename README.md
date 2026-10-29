@@ -61,7 +61,7 @@ flowchart TD
 | 5 | DVR alone with PI control | Restored load voltage, injected voltage and energy | Done |
 | 6 | Add PV and wind plants | Feeder with hybrid DG under varying irradiance and wind | Done |
 | 7 | Combined model and offline optimisation | Device placement, rating and PI gains | Done: five optimisers compared over three seeds (particle swarm best); D-STATCOM placement and both ratings studied; feeder location not varied |
-| 8 | Dataset generation | Labelled disturbance cases from scripted runs | In progress: strategies and relay-timed faults built and checked; dataset of 400 scenarios being generated |
+| 8 | Dataset generation | Labelled disturbance cases from scripted runs | In progress: strategies and relay-timed faults built and checked; dataset of 400 scenarios to be generated |
 | 9 | ML coordinator | Trained model, accuracy and inference time | To do |
 | 10 | Comparison of the three control cases | Tables and waveforms for all scenarios | To do |
 | 11 | Writing | Thesis and paper | To do |
@@ -592,7 +592,7 @@ supervisor has something to decide:
 - The relay cleared the faults in 0.11 s to 0.19 s.
 
 Full results are in `results/strategy_check.csv`. The dataset of 400 scenarios
-(1,600 simulations) for training the supervisor is being generated.
+(1,600 simulations) for training the supervisor is the next run.
 
 ## Contents
 
