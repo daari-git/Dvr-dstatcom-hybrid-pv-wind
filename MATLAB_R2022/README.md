@@ -8,6 +8,7 @@ which R2022a and R2022b can open, together with everything needed to run them.
 
 | File | Description |
 |---|---|
+| `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` | The one model to show: every step run from the Run button |
 | `IEEE13bus_v2019b_Discrete.slx` | Original benchmark feeder (R2019b format) |
 | `IEEE13_basecase.slx` | Step 3: faults and rectifier load, no compensation |
 | `IEEE13_dstatcom.slx` | Step 4: D-STATCOM |
@@ -30,14 +31,16 @@ Use this folder on its own. Do not mix it with the R2024b models.
    addpath('scripts')
    ```
 
-3. To run in Simulink without any script, open a step model (for example
-   `IEEE13_dvr.slx`) and press **Run**. Each model has a results panel below
-   the feeder: five scopes open and fill in as it runs (under a minute),
-   and the displays show the lowest and highest voltages, the DVR power and
-   energy, and the power factor, THD and unbalance. A single line-to-ground
-   fault is set from 0.6 s to 0.8 s; the note in the model says which block
-   to double-click to change the fault, the devices or the gains. To compare
-   runs, open the Data Inspector (Simulation tab).
+3. To run in Simulink without any script, open
+   `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` and press **Run**. It needs
+   no other file. The settings are blocks at the top left: a 1/0 block for
+   each device (all 0 is the base case of step 3, all 1 the combined case of
+   step 7), switch-on times, gains, and sun and wind against time. The fault
+   is set in `Fault 680`. Below the feeder, five scopes open and fill in as it
+   runs (under a minute), and displays show the lowest and highest voltages,
+   the DVR power and energy, and the power factor, THD and unbalance. The note
+   in the model explains each setting. To compare runs, open the Data
+   Inspector (Simulation tab). The step models have the same results panel.
 
 4. To show the saved results instead, two commands are enough:
 

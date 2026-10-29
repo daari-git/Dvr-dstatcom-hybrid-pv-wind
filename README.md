@@ -82,11 +82,30 @@ flowchart TD
 - Low-voltage ride-through compliance (IEEE 1547-2018)
 - ML accuracy and inference time (target: within a quarter to half cycle)
 
-## Running everything in Simulink (no scripts)
+## Running everything in Simulink: one model
 
-Every step model runs straight from the Simulink **Run** button. Nothing has to
-be typed in MATLAB first. Each model has a results panel below the feeder,
-built from standard Simulink and Simscape blocks:
+The whole study runs from one Simulink file,
+`Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx`. Open it and press **Run**.
+Nothing has to be typed in MATLAB first, and the model needs no other file:
+the feeder data and the four controllers are stored inside it.
+
+Every setting is a block that is changed by double-clicking it. The settings
+are grouped at the top left of the model, under a note that explains them:
+
+![Note and settings of the single model](docs/model_settings.png)
+
+- **In service** (1 = yes, 0 = no) for the DVR, the D-STATCOM, the PV plant
+  and the wind plant. A device out of service is disconnected: its breaker
+  stays open, and a bypass breaker closes across the DVR.
+- **Switch-on time** of each device.
+- **Gains** of the DVR and D-STATCOM controllers (saved: the PSO gains) and
+  the **D-STATCOM mode** (1 load compensation, 2 voltage regulation).
+- **Sun and wind**: irradiance (W/m²) and wind speed (m/s) against time.
+- In the feeder: **Fault 680** (faulted phases, ground, start and end time)
+  and **NL Breaker** (when the rectifier load connects).
+
+Below the feeder is the results panel, built from standard Simulink and
+Simscape blocks:
 
 - a **Measurements** subsystem (RMS, THD, Sequence Analyzer, Power and Mean
   blocks) that turns the measured voltages and currents into per-unit
@@ -94,48 +113,42 @@ built from standard Simulink and Simscape blocks:
 - five **scopes** that open when the run starts and fill in as it runs:
   Voltage waveforms, RMS voltages, Power quality, Power and devices, Currents;
 - **displays** with the lowest and highest voltages, the peak DVR power, the
-  DVR energy, and the power factor, THD and unbalance at the end of the run;
-- a note with these instructions.
+  DVR energy, and the power factor, THD and unbalance at the end of the run.
 
-![Results panel of the DVR model](docs/model_panel.png)
+![Results panel](docs/model_panel.png)
 
-Open a model and press Run (under a minute per run). Every model is set
-to the same scenario: a single line-to-ground fault on phase A at node 680 from
-0.6 s to 0.8 s, the rectifier load from 0.3 s, and the DVR and D-STATCOM from
-0.4 s. With that scenario the panel shows:
+The saved scenario is a single line-to-ground fault on phase A at node 680
+from 0.6 s to 0.8 s, the rectifier load from 0.3 s, the PV and wind plants
+from 0.2 s and the DVR and D-STATCOM from 0.4 s, run for 1 s (under a minute).
+Each step of the study is this model with some devices out of service:
 
-| Step | Model | What to look at |
+| Step | In service | What the panel shows |
 |---|---|---|
-| 3 Base case | `IEEE13_basecase.slx` | RMS voltages: node 634 sags to 0.61 pu on phase A during the fault and swells to 1.11 pu on phases B and C |
-| 4 D-STATCOM | `IEEE13_dstatcom.slx` | Power quality: when it starts at 0.4 s, the source power factor goes from 0.86 to 1.00, the current unbalance from 7.1 % to 0.7 % and the current THD from 5.1 % to 2.8 % |
-| 5 DVR | `IEEE13_dvr.slx` | RMS voltages: the supply sags to 0.59 pu while the load stays at 1.00 pu. Displays: peak DVR power 121 kW |
-| 6 PV and wind | `IEEE13_dg.slx` | Power and devices: PV about 400 kW and wind about 500 kW. RMS voltages: node 675, next to the fault, drops to 0.21 pu |
-| 7 Combined | `IEEE13_full.slx` | Everything together, with the PSO gains: the load stays within 1 %, the power factor is 1.00, and the DVR peak power falls to 47 kW because the PV plant supplies the load |
+| 3 Base case | none | Node 634 sags to 0.61 pu on phase A and swells to 1.11 pu on phases B and C; power factor 0.86, current unbalance 7.1 %, current THD up to 5.1 % |
+| 4 D-STATCOM | D-STATCOM | Power factor 1.00, current unbalance 0.7 %, current THD 2.8 % |
+| 5 DVR | DVR | The supply sags to 0.59 pu while the load stays at 1.00 pu; peak DVR power 121 kW |
+| 6 PV and wind | PV and wind | PV about 400 kW and wind about 500 kW; node 675, next to the fault, drops to 0.21 pu |
+| 7 Combined | all (as saved) | The load stays within 1 %, the power factor is 1.00, and the peak DVR power falls to 47 kW because the PV plant supplies the load |
 
-To change the scenario, double-click a block, change it and press Run again:
-
-| To change | Double-click | Setting |
-|---|---|---|
-| Fault type | `Fault 680` | Tick the faulted phases and *Ground* (untick *Ground* for a line-to-line fault) |
-| Fault time | `Fault 680` | *Switching times* `[start end]` in seconds; `[100 100.1]` means no fault |
-| Rectifier load | `NL Breaker` | *Switching times*: when it connects; `100` means never |
-| DVR on or off | `DVR` > `DVR Enable` | *Step time*: when it starts; `100` means off |
-| D-STATCOM on or off | `D-STATCOM` > `DST Enable` and `DST Breaker` | The same time in both; `100` means off |
-| D-STATCOM mode | `D-STATCOM` > `DST Mode` | `1` load compensation, `2` voltage regulation |
-| Sun and wind | `PV Plant` > `PV Resource`, `Wind Plant` > `Wind Resource` | Irradiance (W/m²) and wind speed (m/s) against time |
-| Controller gains | `D-STATCOM` > `DST Gains`, `DVR` > `DVR Gains` | Set to the PSO gains in `IEEE13_full.slx`; the hand-tuned ones are in the note |
+Steps 4 and 5 used hand-tuned gains, given in the note: D-STATCOM
+`[1500; 1; 15; 5; 500; 850]` and DVR `[0.2; 200; 0.5]`. With them the single
+model gives the same numbers as the separate step models (checked for every
+step, within 0.002 pu).
 
 To compare runs, open the **Data Inspector** (Simulation tab). Every result
 on the panel is logged, every run is kept, and the same signal from different
-runs or models can be overlaid: for example the load RMS voltage of the base
-case, the DVR model and the combined model, or the combined model with the
-hand-tuned and the PSO gains.
+runs can be overlaid: for example the load RMS voltage with no device, with
+the DVR and with everything.
+
+The separate step models (`IEEE13_basecase.slx` to `IEEE13_full.slx`) have the
+same results panel; their settings are inside the device subsystems, and they
+are the models the scripts run. `build_panels` adds the panels and
+`build_single` makes the single model from `IEEE13_full.slx`.
 
 What still needs code: the optimisers of step 7 and the machine-learning
 training of step 9 run many simulations to search or learn, so they are
-scripts. Their results go back into the models, where they run in Simulink
-like everything else: the PSO gains are already in `IEEE13_full.slx`. The
-panels themselves were added with `build_panels`, which can rebuild them.
+scripts. Their results go back into the model, where they run in Simulink
+like everything else: the PSO gains are already in it.
 
 ## Showing the saved results: two commands
 
@@ -620,15 +633,17 @@ Full results are in `results/strategy_check.csv`. The dataset of 400 scenarios
 | `scripts/show_results.m` | Shows every result of steps 3 to 6: tables and one window of figures |
 | `scripts/compare_models.m` | Compares the five model configurations under the same fault |
 | `scripts/add_panel.m`, `scripts/build_panels.m` | Add the results panel (measurements, scopes, displays) and the default scenario to the step models |
+| `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` | The one model to show: every step run from the Run button, with all settings as blocks |
+| `scripts/build_single.m` | Makes the single model from `IEEE13_full.slx` |
 | `scripts/demo.m` | Live demonstration: one fault without and with compensation, shown in a figure |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |
 | `results/` | Summary tables and one figure per scenario |
 
 ## Older MATLAB releases
 
-The models at the top level are saved in R2024b. The `MATLAB_R2022` folder
-holds the same models saved in R2022a format, with a copy of the scripts and
-its own instructions, for MATLAB R2022a or R2022b. Run `export_r2022` to
+The models are saved in R2024b. The `MATLAB_R2022` folder holds the same
+models, the single model included, saved in R2022a format, with a copy of the
+scripts and its own instructions, for MATLAB R2022a or R2022b. Run `export_r2022` to
 refresh it after the models or scripts change.
 
 ## Requirements

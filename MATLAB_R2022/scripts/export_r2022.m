@@ -1,8 +1,8 @@
 function export_r2022()
-% Refreshes the MATLAB_R2022 folder: the step models saved in R2022a format
-% (which R2022a and R2022b can open), with a copy of the benchmark model,
-% the scripts and the saved results. Run it after the models or scripts
-% change, from a MATLAB release newer than R2022a.
+% Refreshes the MATLAB_R2022 folder: the step models and the single model
+% saved in R2022a format (which R2022a and R2022b can open), with a copy of
+% the benchmark model, the scripts and the saved results. Run it after the
+% models or scripts change, from a MATLAB release newer than R2022a.
 
 root = fileparts(fileparts(mfilename('fullpath')));
 dst = fullfile(root, 'MATLAB_R2022');
@@ -18,6 +18,13 @@ for k = 1:numel(models)
     close_system(m, 0);
     fprintf('Exported %s\n', m);
 end
+m = 'IEEE13_DVR_DSTATCOM_PV_Wind';          % the one model to show (build_single)
+if ~exist(fullfile(dst, 'Simulink_model'), 'dir'), mkdir(fullfile(dst, 'Simulink_model')); end
+if bdIsLoaded(m), close_system(m, 0); end
+load_system(fullfile(root, 'Simulink_model', [m '.slx']));
+Simulink.exportToVersion(m, fullfile(dst, 'Simulink_model', [m '.slx']), 'R2022A', 'BreakUserLinks', false);
+close_system(m, 0);
+fprintf('Exported %s\n', m);
 copyfile(fullfile(root, 'IEEE13bus_v2019b_Discrete.slx'), dst);
 copyfile(fullfile(root, 'scripts'), fullfile(dst, 'scripts'));
 copyfile(fullfile(root, 'results'), fullfile(dst, 'results'));   % saved tables and figures
