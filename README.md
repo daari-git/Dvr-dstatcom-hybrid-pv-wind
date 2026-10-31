@@ -88,8 +88,8 @@ The whole study runs from one Simulink file,
 `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx`. Open it and press **Run**.
 Nothing has to be typed in MATLAB first, and the model needs no other file:
 the feeder data and the four controllers are stored inside it.
-`Simulink_model/How_to_run.pdf` is a short guide to running it and to every
-value that can be changed.
+`Simulink_model/How_to_run.pdf` is a step-by-step guide: it runs steps 2 to 7 by
+hand and explains every figure and every value that can be changed.
 
 The main page shows the feeder and two subsystems, `Settings` and `Results`:
 
@@ -643,7 +643,7 @@ Full results are in `results/strategy_check.csv`. The dataset of 400 scenarios
 | `scripts/compare_models.m` | Compares the five model configurations under the same fault |
 | `scripts/add_panel.m`, `scripts/build_panels.m` | Add the results panel (measurements, scopes, displays) and the default scenario to the step models |
 | `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` | The one model to show: every step run from the Run button, with all settings as blocks |
-| `Simulink_model/How_to_run.pdf` | Guide to running the single model and changing its settings |
+| `Simulink_model/How_to_run.pdf` | Step-by-step guide to running steps 2 to 7 by hand, with every figure explained |
 | `scripts/build_single.m` | Makes the single model from `IEEE13_full.slx` |
 | `scripts/demo.m` | Live demonstration: one fault without and with compensation, shown in a figure |
 | `scripts/pq_analyse.m` | Fundamental phasors, THD and unbalance of a three-phase signal |

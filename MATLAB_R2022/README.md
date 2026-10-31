@@ -9,7 +9,7 @@ which R2022a and R2022b can open, together with everything needed to run them.
 | File | Description |
 |---|---|
 | `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` | The one model to show: every step run from the Run button |
-| `Simulink_model/How_to_run.pdf` | Guide to running it and changing its settings |
+| `Simulink_model/How_to_run.pdf` | Step-by-step guide to running steps 2 to 7 by hand, with every figure explained |
 | `IEEE13bus_v2019b_Discrete.slx` | Original benchmark feeder (R2019b format) |
 | `IEEE13_basecase.slx` | Step 3: faults and rectifier load, no compensation |
 | `IEEE13_dstatcom.slx` | Step 4: D-STATCOM |
@@ -42,7 +42,7 @@ Use this folder on its own. Do not mix it with the R2024b models.
    lowest and highest voltages, the DVR power and energy, and the power factor,
    THD and unbalance. The note in the model explains each setting. To compare runs, open the Data
    Inspector (Simulation tab). The step models have the same results panel.
-   `Simulink_model/How_to_run.pdf` explains every setting.
+   `Simulink_model/How_to_run.pdf` goes through every step and figure.
 
 4. To show the saved results instead, two commands are enough:
 
