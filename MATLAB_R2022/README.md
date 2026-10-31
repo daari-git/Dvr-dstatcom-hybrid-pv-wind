@@ -34,13 +34,13 @@ Use this folder on its own. Do not mix it with the R2024b models.
 
 3. To run in Simulink without any script, open
    `Simulink_model/IEEE13_DVR_DSTATCOM_PV_Wind.slx` and press **Run**. It needs
-   no other file. The settings are blocks at the top left: a 1/0 block for
-   each device (all 0 is the base case of step 3, all 1 the combined case of
-   step 7), switch-on times, gains, and sun and wind against time. The fault
-   is set in `Fault 680`. Below the feeder, five scopes open and fill in as it
-   runs (under a minute), and displays show the lowest and highest voltages,
-   the DVR power and energy, and the power factor, THD and unbalance. The note
-   in the model explains each setting. To compare runs, open the Data
+   no other file. The settings are inside the `Settings` block: a 1/0 block
+   for each device (all 0 is the base case of step 3, all 1 the combined case
+   of step 7), switch-on times, gains, and sun and wind against time. The fault
+   is set in `Fault 680` on the main page. Five scopes open and fill in as it
+   runs (under a minute), and the displays inside the `Results` block show the
+   lowest and highest voltages, the DVR power and energy, and the power factor,
+   THD and unbalance. The note in the model explains each setting. To compare runs, open the Data
    Inspector (Simulation tab). The step models have the same results panel.
    `Simulink_model/How_to_run.pdf` explains every setting.
 

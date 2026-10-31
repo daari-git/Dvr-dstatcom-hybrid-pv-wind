@@ -91,8 +91,12 @@ the feeder data and the four controllers are stored inside it.
 `Simulink_model/How_to_run.pdf` is a short guide to running it and to every
 value that can be changed.
 
-Every setting is a block that is changed by double-clicking it. The settings
-are grouped at the top left of the model, under a note that explains them:
+The main page shows the feeder and two subsystems, `Settings` and `Results`:
+
+![Main page of the single model](docs/model_single.png)
+
+Every setting is a block that is changed by double-clicking it. They are
+grouped inside `Settings`, under a note that explains them:
 
 ![Note and settings of the single model](docs/model_settings.png)
 
@@ -103,11 +107,11 @@ are grouped at the top left of the model, under a note that explains them:
 - **Gains** of the DVR and D-STATCOM controllers (saved: the PSO gains) and
   the **D-STATCOM mode** (1 load compensation, 2 voltage regulation).
 - **Sun and wind**: irradiance (W/m²) and wind speed (m/s) against time.
-- In the feeder: **Fault 680** (faulted phases, ground, start and end time)
+- On the main page, in the feeder: **Fault 680** (faulted phases, ground, start and end time)
   and **NL Breaker** (when the rectifier load connects).
 
-Below the feeder is the results panel, built from standard Simulink and
-Simscape blocks:
+`Results` holds the results panel, built from standard Simulink and Simscape
+blocks:
 
 - a **Measurements** subsystem (RMS, THD, Sequence Analyzer, Power and Mean
   blocks) that turns the measured voltages and currents into per-unit
@@ -143,9 +147,12 @@ runs can be overlaid: for example the load RMS voltage with no device, with
 the DVR and with everything.
 
 The separate step models (`IEEE13_basecase.slx` to `IEEE13_full.slx`) have the
-same results panel; their settings are inside the device subsystems, and they
-are the models the scripts run. `build_panels` adds the panels and
-`build_single` makes the single model from `IEEE13_full.slx`.
+same results panel below the feeder; their settings are inside the device
+subsystems, and they are the models the scripts run. `build_panels` adds the
+panels and `build_single` makes the single model from `IEEE13_full.slx`. The
+single model was then arranged by hand, its block colours removed and its
+settings and results grouped into the two subsystems, so running
+`build_single` again loses all of that.
 
 What still needs code: the optimisers of step 7 and the machine-learning
 training of step 9 run many simulations to search or learn, so they are
