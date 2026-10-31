@@ -150,9 +150,9 @@ The separate step models (`IEEE13_basecase.slx` to `IEEE13_full.slx`) have the
 same results panel below the feeder; their settings are inside the device
 subsystems, and they are the models the scripts run. `build_panels` adds the
 panels and `build_single` makes the single model from `IEEE13_full.slx`. The
-single model was then arranged by hand, its block colours removed and its
-settings and results grouped into the two subsystems, so running
-`build_single` again loses all of that.
+single model was then arranged by hand, its blocks made plain with every bus
+black, and its settings and results grouped into the two subsystems, so
+running `build_single` again loses all of that.
 
 What still needs code: the optimisers of step 7 and the machine-learning
 training of step 9 run many simulations to search or learn, so they are

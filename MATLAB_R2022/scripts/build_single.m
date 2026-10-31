@@ -13,9 +13,9 @@ function build_single()
 % The blocks inside the device subsystems that held these settings become
 % From blocks. The To Workspace blocks the run scripts read are left out.
 % The step models and the run scripts are not changed.
-% The saved model was then arranged by hand, its block colours removed and
-% its settings and results grouped into two subsystems. Running this again
-% overwrites it and loses all of that.
+% The saved model was then arranged by hand, its blocks made plain with every
+% bus black, and its settings and results grouped into two subsystems.
+% Running this again overwrites it and loses all of that.
 
 root = fileparts(fileparts(mfilename('fullpath')));
 m = 'IEEE13_DVR_DSTATCOM_PV_Wind';
